@@ -1,65 +1,159 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [xmlResult, setXmlResult] = useState<string | null>(null);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null); // <-- NUEVO ESTADO PARA EL PDF
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('saas_token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const emitirFactura = async () => {
+    setLoading(true);
+    setXmlResult(null);
+    setPdfBase64(null);
+    setSuccessMessage('');
+    
+    const token = localStorage.getItem('saas_token');
+
+    const payloadFactura = {
+      serieNumber: "F001-00000001",
+      issueDate: "2026-03-03", // Fecha actualizada
+      issueTime: "12:00:00",
+      currency: "PEN",
+      supplier: {
+        ruc: "20123456789",
+        businessName: "TECH SOLUTIONS SAC",
+        addressCode: "0000"
+      },
+      customer: {
+        documentType: "6",
+        documentNumber: "20987654321",
+        fullName: "COMERCIALIZADORA DEL NORTE"
+      },
+      items: [
+        {
+          id: 1,
+          description: "Suscripción SaaS ERP - Plan Pro",
+          quantity: 1,
+          unitValue: 1000.00,
+          unitPrice: 1180.00,
+          totalTaxes: 180.00
+        }
+      ],
+      totalTaxBase: 1000.00,
+      totalIgv: 180.00,
+      totalAmount: 1180.00
+    };
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/emit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payloadFactura),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al emitir factura');
+      }
+
+      setSuccessMessage(data.message);
+      setXmlResult(data.xmlPreview);
+      setPdfBase64(data.pdfDocument); // <-- GUARDAMOS EL PDF QUE LLEGA DEL BACKEND
+
+    } catch (error: any) {
+      alert(`Falló la emisión: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- NUEVA FUNCIÓN PARA DESCARGAR EL PDF ---
+  const descargarPDF = () => {
+    if (!pdfBase64) return;
+    
+    // Convertimos el Base64 a un enlace descargable
+    const linkSource = `data:application/pdf;base64,${pdfBase64}`;
+    const downloadLink = document.createElement("a");
+    const fileName = "Factura_F001-00000001.pdf";
+
+    downloadLink.href = linkSource;
+    downloadLink.download = fileName;
+    downloadLink.click();
+  };
+
+  const cerrarSesion = () => {
+    localStorage.removeItem('saas_token');
+    router.push('/login');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Panel de Facturación Electrónica</h1>
+          <button 
+            onClick={cerrarSesion}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Cerrar Sesión
+          </button>
         </div>
-      </main>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-700">Emitir Nuevo Comprobante</h2>
+          <p className="text-gray-500 mb-6">Haz clic en el botón para generar una factura de prueba y enviarla a la base de datos y al OSE simulado.</p>
+          
+          <div className="flex gap-4">
+            <button 
+              onClick={emitirFactura}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-md transition disabled:opacity-50"
+            >
+              {loading ? 'Procesando...' : '🚀 Emitir Factura UBL 2.1'}
+            </button>
+
+            {/* --- NUEVO BOTÓN QUE APARECE CUANDO LLEGA EL PDF --- */}
+            {pdfBase64 && (
+              <button 
+                onClick={descargarPDF}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-md transition"
+              >
+                📄 Descargar Factura (PDF)
+              </button>
+            )}
+          </div>
+        </div>
+
+        {successMessage && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+            <strong>¡Éxito! </strong> {successMessage}
+          </div>
+        )}
+
+        {xmlResult && (
+          <div className="bg-gray-900 rounded-xl p-4 shadow-inner overflow-hidden">
+            <h3 className="text-gray-300 text-sm font-bold mb-2 uppercase tracking-wider">XML Generado (UBL 2.1)</h3>
+            <pre className="text-green-400 text-xs overflow-x-auto p-2">
+              <code>{xmlResult}</code>
+            </pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
