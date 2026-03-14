@@ -55,7 +55,8 @@ export default function DashboardPage() {
   const verificarEstadoCaja = async (token: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/status`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
       
       const data = await response.json();
@@ -88,7 +89,8 @@ export default function DashboardPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/open`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ initialAmount: Number(montoInicial) })
+        body: JSON.stringify({ initialAmount: Number(montoInicial) }),
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
       const data = await response.json();
       if (data.success) {
@@ -126,7 +128,8 @@ export default function DashboardPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ finalAmountCash: Number(montoCierre), notes: notasCierre })
+        body: JSON.stringify({ finalAmountCash: Number(montoCierre), notes: notasCierre }),
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
       const data = await response.json();
       if (data.success) {
@@ -154,7 +157,8 @@ export default function DashboardPage() {
     const token = localStorage.getItem('saas_token');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/clients/search/${documento}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
       if (response.ok) {
         const data = await response.json();
@@ -178,7 +182,8 @@ export default function DashboardPage() {
     const token = localStorage.getItem('saas_token');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/search/${termino}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
       const data = await response.json();
       if (data.success && data.data.length > 0) {
@@ -294,6 +299,7 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payloadFactura),
+        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
       });
 
       const data = await response.json();
