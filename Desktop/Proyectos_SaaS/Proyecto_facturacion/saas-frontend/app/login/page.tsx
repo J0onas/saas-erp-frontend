@@ -28,7 +28,14 @@ export default function LoginPage() {
       if (!response.ok) {
         throw new Error(data.message || 'Error al iniciar sesión');
       }
-
+      // Guardamos un indicador de que estamos logueados y los datos inofensivos del usuario
+      localStorage.setItem('isLoggedIn', 'true');
+      if (data.user) {
+         localStorage.setItem('user_data', JSON.stringify(data.user));
+      }
+      
+      alert('¡Login exitoso! Entrando al sistema...');
+      router.push('/dashboard'); 
       // ¡LA SEGURIDAD EN ACCIÓN! 
       // Ya NO usamos localStorage.setItem('saas_token', ...).
       // El navegador acaba de guardar la cookie httpOnly automáticamente en su bóveda.

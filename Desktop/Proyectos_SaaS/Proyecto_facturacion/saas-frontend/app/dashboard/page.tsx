@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [sugerenciasProducto, setSugerenciasProducto] = useState<any[]>([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [carrito, setCarrito] = useState<any[]>([]); // ARRAY QUE GUARDA LA VENTA
+  const [carrito, setCarrito] = useState<any[]>([]); 
   
   // --- ESTADOS DE DETRACCIÓN ---
   const [aplicarDetraccion, setAplicarDetraccion] = useState(false);
@@ -43,30 +43,37 @@ export default function DashboardPage() {
   const [suscripcionVencida, setSuscripcionVencida] = useState(false);
   const [mensajeSuscripcion, setMensajeSuscripcion] = useState('');
 
+  // 1. EL NUEVO CADENERO DE REACT
   useEffect(() => {
-    const token = localStorage.getItem('saas_token');
-    if (!token) {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
       router.push('/login');
       return;
     }
-    verificarEstadoCaja(token);
+    verificarEstadoCaja(); 
   }, [router]);
 
-  const verificarEstadoCaja = async (token: string) => {
+  const verificarEstadoCaja = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/status`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        method: 'GET',
+        // ¡Ya no hay headers de Authorization aquí! 
+        credentials: 'include', // El pase VIP (Cookie)
       });
       
+      // Si la cookie expiró o es inválida, lo pateamos al login
+      if (response.status === 401 || response.status === 403) {
+        cerrarSesion();
+        return;
+      }
+
       const data = await response.json();
 
-      // NUEVO: Verificamos si el backend bloqueó por falta de pago (Error 402)
       if (response.status === 402) {
         setSuscripcionVencida(true);
         setMensajeSuscripcion(data.message || 'Tu suscripción ha vencido.');
-        setCajaVerificada(true); // Marcamos como verificada para quitar el loading
-        return; // Detenemos la ejecución aquí
+        setCajaVerificada(true); 
+        return; 
       }
 
       if (data.success) {
@@ -84,13 +91,12 @@ export default function DashboardPage() {
     if (montoInicial === '') return alert('Ingresa un monto inicial válido.');
     
     setAbriendoCaja(true);
-    const token = localStorage.getItem('saas_token');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/open`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initialAmount: Number(montoInicial) }),
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        credentials: 'include', 
       });
       const data = await response.json();
       if (data.success) {
@@ -113,7 +119,7 @@ export default function DashboardPage() {
     setPdfBase64(null);
     setXmlResult(null);
     setSuccessMessage('');
-    setCarrito([]); // Vaciamos el carrito
+    setCarrito([]); 
     setTerminoBusqueda('');
   };
 
@@ -122,14 +128,12 @@ export default function DashboardPage() {
     if (montoCierre === '') return alert('Debes ingresar el dinero contado físicamente.');
 
     setCerrandoCaja(true);
-    const token = localStorage.getItem('saas_token');
-    
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cash/close`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ finalAmountCash: Number(montoCierre), notes: notasCierre }),
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        credentials: 'include', 
       });
       const data = await response.json();
       if (data.success) {
@@ -154,11 +158,10 @@ export default function DashboardPage() {
   const buscarClienteBD = async (documento: string) => {
     if (documento.length !== 8 && documento.length !== 11) return;
     setBuscandoCliente(true);
-    const token = localStorage.getItem('saas_token');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/clients/search/${documento}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        method: 'GET',
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -179,11 +182,10 @@ export default function DashboardPage() {
       setMostrarSugerencias(false);
       return;
     }
-    const token = localStorage.getItem('saas_token');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/search/${termino}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        method: 'GET',
+        credentials: 'include', 
       });
       const data = await response.json();
       if (data.success && data.data.length > 0) {
@@ -197,21 +199,15 @@ export default function DashboardPage() {
     }
   };
 
-  // --- LÓGICA DEL CARRITO PROFESIONAL ---
   const seleccionarProducto = (producto: any) => {
-    // Verificamos si ya está en el carrito
     const productoExistente = carrito.find(item => item.id === producto.id);
-    
     if (productoExistente) {
-      // Si existe, le sumamos 1 a la cantidad
       setCarrito(carrito.map(item => 
         item.id === producto.id ? { ...item, quantity: item.quantity + 1 } : item
       ));
     } else {
-      // Si es nuevo, lo agregamos con cantidad 1
       setCarrito([...carrito, { ...producto, quantity: 1 }]);
     }
-    
     setTerminoBusqueda('');
     setSugerenciasProducto([]);
     setMostrarSugerencias(false);
@@ -226,7 +222,6 @@ export default function DashboardPage() {
     setCarrito(carrito.filter(item => item.id !== id));
   };
 
-  // --- MATEMÁTICAS DINÁMICAS ---
   const total = carrito.reduce((sum, item) => sum + (Number(item.unit_price) * item.quantity), 0);
   const subtotal = total / 1.18;
   const igv = total - subtotal;
@@ -243,19 +238,16 @@ export default function DashboardPage() {
       alert('Por favor, ingresa los datos del cliente.');
       return;
     }
-
     if (carrito.length === 0) {
       alert('🛑 El carrito está vacío. Agrega al menos un producto a la venta.');
       return;
     }
 
     setLoading(true);
-    const token = localStorage.getItem('saas_token');
     const now = new Date();
     const offsetMs = now.getTimezoneOffset() * 60000;
     const localISO = new Date(now.getTime() - offsetMs).toISOString();
     
-    // Mapeamos el carrito para enviarlo al backend
     const payloadItems = carrito.map((item, index) => {
       const itemTotal = Number(item.unit_price) * item.quantity;
       const itemSubtotal = itemTotal / 1.18;
@@ -288,7 +280,7 @@ export default function DashboardPage() {
         documentNumber: clienteRuc,
         fullName: clienteNombre
       },
-      items: payloadItems, // ENVIAMOS TODO EL ARRAY DE PRODUCTOS
+      items: payloadItems, 
       totalTaxBase: Number(subtotal.toFixed(2)),
       totalIgv: Number(igv.toFixed(2)),
       totalAmount: total
@@ -297,9 +289,9 @@ export default function DashboardPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/emit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadFactura),
-        credentials: 'include', // <-- ¡EL PASE VIP! Esto envía la cookie.
+        credentials: 'include', 
       });
 
       const data = await response.json();
@@ -324,9 +316,14 @@ export default function DashboardPage() {
     downloadLink.click();
   };
 
+  // 2. LA NUEVA FORMA DE CERRAR SESIÓN
   const cerrarSesion = () => {
-    localStorage.removeItem('saas_token');
+    // Borramos las banderas falsas
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user_data');
     router.push('/login');
+    // Nota: A futuro crearemos un endpoint GET /auth/logout en NestJS para 
+    // pedirle al navegador que destruya la cookie httpOnly físicamente.
   };
 
   if (!cajaVerificada) {
@@ -379,7 +376,6 @@ export default function DashboardPage() {
 
   // PANTALLA DE BLOQUEO (CAJA CERRADA)
   if (!cajaAbierta) {
-    // ... tu mismo código de caja cerrada ...
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col justify-center items-center p-4">
         <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-blue-600 text-center">
@@ -550,7 +546,7 @@ export default function DashboardPage() {
                   {loading ? 'Procesando con SUNAT...' : '🚀 Emitir Comprobante'}
                 </button>
               ) : (
-                // MODO 2: VENTA EXITOSA (Bloqueamos doble cobro y mostramos acciones)
+                // MODO 2: VENTA EXITOSA
                 <div className="space-y-3 animate-fade-in">
                   <div className="bg-green-100 text-green-800 p-3 rounded-lg text-center font-bold border border-green-300">
                     ✅ ¡Venta registrada con éxito!
