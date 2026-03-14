@@ -33,6 +33,9 @@ export default function LoginPage() {
       if (data.user) {
          localStorage.setItem('user_data', JSON.stringify(data.user));
       }
+
+      localStorage.setItem('saas_token', data.access_token);
+      localStorage.setItem('isLoggedIn', 'true');
       
       alert('¡Login exitoso! Entrando al sistema...');
       router.push('/dashboard'); 
