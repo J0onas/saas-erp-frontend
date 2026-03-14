@@ -19,6 +19,8 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        // --- FIX BUG #5: PERMITIR COOKIES CROSS-DOMAIN ---
+        credentials: 'include', 
       });
 
       const data = await response.json();
@@ -27,9 +29,13 @@ export default function LoginPage() {
         throw new Error(data.message || 'Error al iniciar sesión');
       }
 
-      // Si es exitoso, guardamos el Token en el navegador
-      localStorage.setItem('saas_token', data.access_token);
-      alert('¡Login exitoso! Token guardado.');
+      // ¡LA SEGURIDAD EN ACCIÓN! 
+      // Ya NO usamos localStorage.setItem('saas_token', ...).
+      // El navegador acaba de guardar la cookie httpOnly automáticamente en su bóveda.
+      
+      // Opcional: Si necesitas los datos del usuario (nombre, rol) para mostrar en pantalla,
+      // puedes guardar data.user en un estado global (Zustand) o Contexto.
+      console.log('Login exitoso. Bienvenido:', data.user.email);
       
       // Aquí luego lo redirigiremos al Dashboard
       router.push('/dashboard'); 
