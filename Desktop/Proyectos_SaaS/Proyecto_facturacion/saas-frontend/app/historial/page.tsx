@@ -24,7 +24,9 @@ export default function HistorialPage() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/history`, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          credentials: 'include'
+
         });
 
         if (!response.ok) throw new Error('Error al cargar historial');
@@ -46,7 +48,8 @@ export default function HistorialPage() {
       const token = localStorage.getItem('saas_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/${invoiceId}/pdf`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Error al obtener PDF');

@@ -26,7 +26,8 @@ export default function ReportesPage() {
 
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/reports/dashboard`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
         });
         const data = await response.json();
         
@@ -53,7 +54,8 @@ export default function ReportesPage() {
     try {
       // 1. Llamamos a tu nuevo endpoint (Asegúrate de tener esta ruta en tu controlador NestJS)
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/invoices/reports/sire/${year}/${month}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
       });
       const data = await response.json();
 

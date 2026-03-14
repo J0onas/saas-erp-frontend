@@ -63,6 +63,7 @@ export default function DashboardPage() {
           'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify(payloadFactura),
+        credentials: 'include',
       });
 
       const data = await response.json();

@@ -22,7 +22,8 @@ export default function SuscripcionPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ planName, precio })
+        body: JSON.stringify({ planName, precio }),
+        credentials: 'include',
       });
 
       const data = await response.json();

@@ -30,7 +30,8 @@ export default function ProductosPage() {
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
       });
       const data = await response.json();
       if (data.success) {
@@ -57,6 +58,7 @@ export default function ProductosPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: nuevoNombre,
           unit_price: Number(nuevoPrecio),
