@@ -417,6 +417,8 @@ export default function DashboardPage() {
             <button onClick={() => router.push('/productos')} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium shadow-sm transition">📦 Inventario</button>
             <button onClick={() => router.push('/reportes')} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium shadow-sm transition">📊 Dashboard</button>
             <button onClick={() => router.push('/historial')} className="bg-gray-800 hover:bg-black text-white px-5 py-2 rounded-lg font-medium shadow-sm transition">📂 Comprobantes</button>
+            {/* NUEVO BOTÓN DE CONFIGURACIÓN */}
+            <button onClick={() => router.push('/configuracion')} className="bg-purple-100 border border-purple-300 text-purple-800 hover:bg-purple-200 px-4 py-2 rounded-lg font-bold shadow-sm transition">⚙️ Mi Empresa</button>
             <button onClick={() => setMostrarModalCierre(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition">🔒 Cerrar Turno</button>
             <button onClick={cerrarSesion} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition">Salir</button>
           </div>
