@@ -2,225 +2,239 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Navbar from '../components/Navbar';
+
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ProductosPage() {
   const router = useRouter();
   const [productos, setProductos] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
 
-  // Estados para el Modal de Nuevo Producto
   const [mostrarModal, setMostrarModal] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoPrecio, setNuevoPrecio] = useState('');
   const [nuevoStock, setNuevoStock] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
 
-  useEffect(() => {
-    cargarProductos();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { cargarProductos(); }, []);
+
+  const token = () => localStorage.getItem('saas_token') || '';
 
   const cargarProductos = async () => {
-    const token = localStorage.getItem('saas_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
+    const t = token();
+    if (!t) { router.push('/login'); return; }
+    setCargando(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: 'include',
+      const res = await fetch(`${API}/api/v1/products`, {
+        headers: { Authorization: `Bearer ${t}` },
       });
-      const data = await response.json();
-      if (data.success) {
-        setProductos(data.data);
-      }
-    } catch (error) {
-      console.error("Error cargando inventario:", error);
-    } finally {
-      setCargando(false);
-    }
+      const data = await res.json();
+      if (data.success) setProductos(data.data);
+    } finally { setCargando(false); }
   };
 
-  const guardarNuevoProducto = async (e: React.FormEvent) => {
+  const guardarProducto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nuevoNombre || !nuevoPrecio || !nuevoStock) return alert('Completa todos los campos');
-
     setGuardando(true);
-    const token = localStorage.getItem('saas_token');
-
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products`, {
+      const res = await fetch(`${API}/api/v1/products`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
         body: JSON.stringify({
           name: nuevoNombre,
           unit_price: Number(nuevoPrecio),
-          stock: Number(nuevoStock)
-        })
+          stock: Number(nuevoStock),
+        }),
       });
-
-      const data = await response.json();
+      const data = await res.json();
       if (data.success) {
-        // Limpiamos el formulario, cerramos el modal y recargamos la lista
-        setNuevoNombre('');
-        setNuevoPrecio('');
-        setNuevoStock('');
+        setNuevoNombre(''); setNuevoPrecio(''); setNuevoStock('');
         setMostrarModal(false);
+        setMensaje({ tipo: 'ok', texto: 'Producto registrado correctamente.' });
+        setTimeout(() => setMensaje({ tipo: '', texto: '' }), 3000);
         cargarProductos();
       } else {
-        alert('Error al guardar el producto');
+        setMensaje({ tipo: 'err', texto: 'Error al guardar.' });
       }
-    } catch (error) {
-      console.error(error);
-      alert('Error de conexión');
-    } finally {
-      setGuardando(false);
-    }
+    } finally { setGuardando(false); }
   };
 
-  const renderStockBadge = (stock: number) => {
-    if (stock > 20) return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold border border-green-200">✅ {stock} en Stock</span>;
-    if (stock > 0) return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200">⚠️ {stock} (Bajo)</span>;
-    return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold border border-red-200">❌ Agotado</span>;
+  const productosFiltrados = productos.filter((p) =>
+    p.name.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const stockStatus = (stock: number) => {
+    if (stock <= 0) return { label: 'Agotado', cls: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' };
+    if (stock <= 10) return { label: `${stock} — Bajo`, cls: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' };
+    return { label: `${stock} en stock`, cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        {/* Barra Superior */}
-        <div className="flex justify-between items-center mb-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Catálogo e Inventario</h1>
-            <p className="text-gray-500 mt-1">Control de existencias y precios del negocio.</p>
+            <h1 className="text-2xl font-black text-slate-900">Catálogo e Inventario</h1>
+            <p className="text-slate-500 text-sm mt-1">Control de existencias y precios del negocio.</p>
           </div>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setMostrarModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm transition"
-            >
-              ➕ Nuevo Producto
-            </button>
-            <Link href="/dashboard" className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-5 py-2 rounded-lg font-medium shadow-sm transition">
-              ← Volver al POS
-            </Link>
-          </div>
+          <button onClick={() => setMostrarModal(true)}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo producto
+          </button>
         </div>
 
-        {/* Tabla de Productos */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-          {cargando ? (
-            <div className="p-8 text-center text-gray-500">Cargando almacén...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
-                    <th className="px-6 py-4 font-semibold border-b">Descripción del Producto</th>
-                    <th className="px-6 py-4 font-semibold border-b text-right">Precio Unitario</th>
-                    <th className="px-6 py-4 font-semibold border-b text-center">Estado de Stock</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {productos.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
-                        No hay productos registrados en el almacén.
-                      </td>
-                    </tr>
-                  ) : (
-                    productos.map((prod) => (
-                      <tr key={prod.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 text-sm font-bold text-gray-800">{prod.name}</td>
-                        <td className="px-6 py-4 text-sm text-blue-700 font-bold text-right">S/ {Number(prod.unit_price).toFixed(2)}</td>
-                        <td className="px-6 py-4 text-center">{renderStockBadge(prod.stock)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* --- MODAL PARA NUEVO PRODUCTO --- */}
-        {mostrarModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Registrar Nuevo Producto</h2>
-                <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">×</button>
-              </div>
-              
-              <form onSubmit={guardarNuevoProducto} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre o Descripción</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={nuevoNombre}
-                    onChange={(e) => setNuevoNombre(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    placeholder="Ej. Teclado Mecánico Redragon"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Venta</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-500 font-bold">S/</span>
-                      <input 
-                        type="number" 
-                        required step="0.01" min="0"
-                        value={nuevoPrecio}
-                        onChange={(e) => setNuevoPrecio(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg p-2 pl-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
-                    <input 
-                      type="number" 
-                      required min="0"
-                      value={nuevoStock}
-                      onChange={(e) => setNuevoStock(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Cantidad"
-                    />
-                  </div>
-                </div>
-                
-                <div className="pt-4 flex gap-3 justify-end border-t border-gray-100 mt-6">
-                  <button 
-                    type="button" 
-                    onClick={() => setMostrarModal(false)}
-                    className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={guardando}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  >
-                    {guardando ? 'Guardando...' : 'Guardar Producto'}
-                  </button>
-                </div>
-              </form>
-            </div>
+        {/* Mensaje feedback */}
+        {mensaje.texto && (
+          <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
+            mensaje.tipo === 'ok'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            {mensaje.tipo === 'ok' ? '✅' : '❌'} {mensaje.texto}
           </div>
         )}
 
+        {/* Buscador inline */}
+        <div className="mb-4">
+          <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full sm:w-72 px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+            placeholder="🔍 Buscar producto..." />
+        </div>
+
+        {/* Tabla */}
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          {cargando ? (
+            <div className="p-12 flex items-center justify-center text-slate-500">
+              <div className="animate-spin h-6 w-6 border-2 border-slate-200 border-t-blue-600 rounded-full mr-3" />
+              Cargando inventario...
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left font-semibold">Producto</th>
+                  <th className="px-6 py-4 text-right font-semibold">Precio</th>
+                  <th className="px-6 py-4 text-center font-semibold">Stock</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {productosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-10 text-center text-slate-400">
+                      {busqueda ? `Sin resultados para "${busqueda}"` : 'No hay productos registrados.'}
+                    </td>
+                  </tr>
+                ) : (
+                  productosFiltrados.map((prod) => {
+                    const s = stockStatus(Number(prod.stock_quantity ?? prod.stock ?? 0));
+                    return (
+                      <tr key={prod.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-slate-800">{prod.name}</span>
+                          {prod.code && (
+                            <span className="ml-2 text-xs text-slate-400 font-mono">#{prod.code}</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-blue-600">
+                          S/ {Number(prod.unit_price).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${s.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>
+                            {s.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Footer stats */}
+        {!cargando && (
+          <div className="mt-4 flex gap-4 text-xs text-slate-500">
+            <span>{productosFiltrados.length} productos</span>
+            <span>·</span>
+            <span className="text-red-500 font-medium">
+              {productos.filter(p => Number(p.stock_quantity ?? p.stock ?? 0) <= 0).length} agotados
+            </span>
+            <span>·</span>
+            <span className="text-amber-500 font-medium">
+              {productos.filter(p => {
+                const s = Number(p.stock_quantity ?? p.stock ?? 0);
+                return s > 0 && s <= 10;
+              }).length} con stock bajo
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Modal nuevo producto */}
+      {mostrarModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-black text-slate-800">Registrar producto</h2>
+              <button onClick={() => setMostrarModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={guardarProducto} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre o descripción</label>
+                <input type="text" required value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                  placeholder="Ej. Teclado mecánico Redragon" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Precio de venta</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-slate-400 text-sm font-medium">S/</span>
+                    <input type="number" required step="0.01" min="0"
+                      value={nuevoPrecio} onChange={(e) => setNuevoPrecio(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl pl-9 pr-4 py-3 text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                      placeholder="0.00" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Stock inicial</label>
+                  <input type="number" required min="0"
+                    value={nuevoStock} onChange={(e) => setNuevoStock(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                    placeholder="0" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setMostrarModal(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold text-sm transition">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={guardando}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition disabled:opacity-50">
+                  {guardando ? 'Guardando...' : 'Guardar producto'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
