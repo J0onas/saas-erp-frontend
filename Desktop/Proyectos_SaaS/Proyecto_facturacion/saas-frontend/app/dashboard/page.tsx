@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [clienteCorreo, setClienteCorreo]         = useState('');
   const [buscandoCliente, setBuscandoCliente]     = useState(false);
   const [metodoPago, setMetodoPago]               = useState('EFECTIVO');
+  const [tipoComprobante, setTipoComprobante] = useState<'01'|'03'>('01');
 
   const [terminoBusqueda, setTerminoBusqueda]         = useState('');
   const [sugerenciasProducto, setSugerenciasProducto] = useState<any[]>([]);
@@ -41,6 +42,8 @@ export default function DashboardPage() {
   const [mensajeSuscripcion, setMensajeSuscripcion]   = useState('');
 
   const [errorVenta, setErrorVenta] = useState('');
+  const [sunatStatus, setSunatStatus] = useState('');
+  const [sunatMessage, setSunatMessage] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('saas_token');
@@ -111,6 +114,8 @@ export default function DashboardPage() {
 
   const buscarClienteBD = useCallback(async (doc: string) => {
     if (doc.length !== 8 && doc.length !== 11) return;
+    if (doc.length === 8) setTipoComprobante('03');
+    if (doc.length === 11) setTipoComprobante('01');
     setBuscandoCliente(true);
     try {
       const res = await fetch(`${API}/api/v1/clients/search/${doc}`, {
@@ -236,6 +241,7 @@ export default function DashboardPage() {
       detractionPercent: aplicarDetraccion ? porcentajeDetraccion : 0,
       detractionAmount: Number(montoDetraccion.toFixed(2)),
       currency: 'PEN',
+      tipoComprobante: tipoComprobante,
       // supplier ya no se envía: el backend lo obtiene desde company_settings
       supplier: { ruc: '', businessName: '', addressCode: '0000' },
       customer: {
@@ -261,6 +267,8 @@ export default function DashboardPage() {
       setSuccessMessage(data.message);
       setPdfBase64(data.pdfDocument);
       setWhatsappLink(data.whatsappLink || null);
+      setSunatStatus(data.sunatStatus);      // nuevo estado
+      setSunatMessage(data.sunatMessage);    // nuevo estado
     } catch (err: any) {
       setErrorVenta(err.message);
     } finally {
@@ -480,39 +488,76 @@ export default function DashboardPage() {
           {/* ── Panel derecho: cliente y cobro ─────────────────────────────── */}
           <div className="lg:col-span-4 space-y-4">
 
-            {/* Cliente */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4">
-              <h2 className="text-sm font-bold text-slate-700 mb-3">Datos del cliente</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">RUC / DNI</label>
-                  <div className="relative">
-                    <input type="text" value={clienteRuc}
-                      onChange={(e) => setClienteRuc(e.target.value)}
-                      onBlur={() => buscarClienteBD(clienteRuc)}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
-                      placeholder="20123456789" />
-                    {buscandoCliente && (
-                      <div className="absolute right-3 top-3">
-                        <div className="animate-spin h-4 w-4 border-2 border-slate-200 border-t-blue-500 rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Razón social / Nombre</label>
-                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
-                    placeholder="Nombre completo" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Correo (opcional)</label>
-                  <input type="email" value={clienteCorreo} onChange={(e) => setClienteCorreo(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
-                    placeholder="cliente@correo.com" />
-                </div>
-              </div>
-            </div>
+           {/* Cliente */}
+<div className="bg-white rounded-2xl border border-slate-200 p-4">
+  <h2 className="text-sm font-bold text-slate-700 mb-3">Datos del cliente</h2>
+
+  {/* ── SELECTOR TIPO COMPROBANTE ── */}
+  <div className="mb-4">
+    <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">
+      Tipo de comprobante
+    </label>
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={() => setTipoComprobante('01')}
+        className={`py-2 px-3 rounded-xl border-2 text-sm font-bold transition ${
+          tipoComprobante === '01'
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+        }`}
+      >
+        🧾 Factura
+      </button>
+      <button
+        type="button"
+        onClick={() => setTipoComprobante('03')}
+        className={`py-2 px-3 rounded-xl border-2 text-sm font-bold transition ${
+          tipoComprobante === '03'
+            ? 'bg-emerald-600 text-white border-emerald-600'
+            : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+        }`}
+      >
+        🏷️ Boleta
+      </button>
+    </div>
+    <p className="text-xs text-slate-400 mt-1">
+      {tipoComprobante === '03'
+        ? 'Serie B001 · Para personas naturales (DNI)'
+        : 'Serie F001 · Para empresas (RUC)'}
+    </p>
+  </div>
+
+  <div className="space-y-3">
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">RUC / DNI</label>
+      <div className="relative">
+        <input type="text" value={clienteRuc}
+          onChange={(e) => setClienteRuc(e.target.value)}
+          onBlur={() => buscarClienteBD(clienteRuc)}
+          className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
+          placeholder="20123456789" />
+        {buscandoCliente && (
+          <div className="absolute right-3 top-3">
+            <div className="animate-spin h-4 w-4 border-2 border-slate-200 border-t-blue-500 rounded-full" />
+          </div>
+        )}
+      </div>
+    </div>
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Razón social / Nombre</label>
+      <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)}
+        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
+        placeholder="Nombre completo" />
+    </div>
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Correo (opcional)</label>
+      <input type="email" value={clienteCorreo} onChange={(e) => setClienteCorreo(e.target.value)}
+        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-slate-50 focus:bg-white"
+        placeholder="cliente@correo.com" />
+    </div>
+  </div>
+</div>
 
             {/* Cobro */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4">
@@ -595,6 +640,20 @@ export default function DashboardPage() {
                     </svg>
                     Venta registrada con éxito
                   </div>
+                  {sunatStatus && (
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${
+        sunatStatus === 'ACEPTADO'
+          ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+          : sunatStatus === 'RECHAZADO'
+          ? 'bg-red-50 border border-red-200 text-red-700'
+          : 'bg-amber-50 border border-amber-200 text-amber-700'
+      }`}>
+        {sunatStatus === 'ACEPTADO' ? '✓ SUNAT: Aceptado'
+         : sunatStatus === 'RECHAZADO' ? '✗ SUNAT: Rechazado'
+         : '⏳ SUNAT: ' + sunatStatus}
+        {sunatMessage && <span className="opacity-75 ml-1">· {sunatMessage}</span>}
+      </div>
+    )}
                   <button onClick={descargarPDF}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
