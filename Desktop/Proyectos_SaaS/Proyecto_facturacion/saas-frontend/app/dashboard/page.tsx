@@ -44,6 +44,8 @@ export default function DashboardPage() {
   const [errorVenta, setErrorVenta] = useState('');
   const [sunatStatus, setSunatStatus] = useState('');
   const [sunatMessage, setSunatMessage] = useState('');
+  const [descuentoGlobal, setDescuentoGlobal] = useState(0); // porcentaje 0-100
+  const [descuentoItems, setDescuentoItems] = useState<Record<string, number>>({}); // { productId: porcentaje }
 
   useEffect(() => {
     const token = localStorage.getItem('saas_token');
@@ -194,10 +196,16 @@ export default function DashboardPage() {
     setErrorVenta('');
   };
 
-  const total = carrito.reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0);
-  const subtotal = total / 1.18;
-  const igv = total - subtotal;
-  const superaLimiteDetraccion = total > 700;
+  const subtotalSinDesc = carrito.reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0);
+   const descItemsTotal  = carrito.reduce((s, i) => {
+     const pct = descuentoItems[i.id] || 0;
+     return s + (Number(i.unit_price) * i.quantity * pct / 100);
+   }, 0);
+   const descGlobalMonto = (subtotalSinDesc - descItemsTotal) * descuentoGlobal / 100;
+   const total    = subtotalSinDesc - descItemsTotal - descGlobalMonto;
+   const subtotal = total / 1.18;
+   const igv      = total - subtotal;
+   const superaLimiteDetraccion = total > 700;
 
   useEffect(() => {
     if (!superaLimiteDetraccion) setAplicarDetraccion(false);
@@ -221,15 +229,22 @@ export default function DashboardPage() {
     const offsetMs = now.getTimezoneOffset() * 60000;
     const localISO = new Date(now.getTime() - offsetMs).toISOString();
 
-    const payloadItems = carrito.map((item, idx) => ({
-      id: idx + 1,
-      productId: item.id,
-      description: item.name,
-      quantity: item.quantity,
-      unitValue: Number((Number(item.unit_price) / 1.18).toFixed(2)),
-      unitPrice: Number(item.unit_price),
-      totalTaxes: Number(((Number(item.unit_price) - Number(item.unit_price) / 1.18) * item.quantity).toFixed(2)),
-    }));
+    const payloadItems = carrito.map((item, idx) => {
+     const pctItem = descuentoItems[item.id] || 0;
+     const descMonto = Number(item.unit_price) * item.quantity * pctItem / 100;
+     const precioConDesc = Number(item.unit_price) * item.quantity - descMonto;
+     return {
+       id: idx + 1,
+       productId: item.id,
+       description: item.name,
+       quantity: item.quantity,
+       unitValue: Number((Number(item.unit_price) / 1.18).toFixed(2)),
+       unitPrice: Number(item.unit_price),
+       totalTaxes: Number(((Number(item.unit_price) - Number(item.unit_price) / 1.18) * item.quantity).toFixed(2)),
+       discountPercent: pctItem,
+       discountAmount: Number(descMonto.toFixed(2)),
+     };
+   });
 
     const payload = {
       serieNumber: '',
@@ -253,6 +268,8 @@ export default function DashboardPage() {
       totalTaxBase: Number(subtotal.toFixed(2)),
       totalIgv: Number(igv.toFixed(2)),
       totalAmount: total,
+      discountPercent: descuentoGlobal,
+      discountAmount: Number(descGlobalMonto.toFixed(2)),
     };
 
     try {
@@ -438,20 +455,35 @@ export default function DashboardPage() {
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
-                      <th className="px-4 py-3 text-left font-semibold">Producto</th>
-                      <th className="px-4 py-3 text-center font-semibold">P. Unit</th>
-                      <th className="px-4 py-3 text-center font-semibold">Cant.</th>
-                      <th className="px-4 py-3 text-right font-semibold">Subtotal</th>
-                      <th className="px-4 py-3 text-center font-semibold w-10"></th>
-                    </tr>
-                  </thead>
+  <tr className="border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+    <th className="px-4 py-3 text-left font-semibold">Producto</th>
+    <th className="px-4 py-3 text-center font-semibold">P. Unit</th>
+    <th className="px-4 py-3 text-center font-semibold">Desc. %</th>
+    <th className="px-4 py-3 text-center font-semibold">Cant.</th>
+    <th className="px-4 py-3 text-right font-semibold">Subtotal</th>
+    <th className="px-4 py-3 text-center font-semibold w-10"></th>
+  </tr>
+</thead>
                   <tbody className="divide-y divide-slate-50">
                     {carrito.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-800">{item.name}</td>
                         <td className="px-4 py-3 text-center text-slate-600">
                           S/ {Number(item.unit_price).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="number"
+                           min="0"
+                           max="100"
+                           value={descuentoItems[item.id] || 0}
+                           onChange={(e) => setDescuentoItems(prev => ({
+                            ...prev,
+                            [item.id]: Math.min(100, Math.max(0, Number(e.target.value)))
+                         }))}
+                          className="w-16 border border-slate-200 rounded-lg px-2 py-1 text-xs text-center
+                            text-slate-700 bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                           />
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -571,6 +603,35 @@ export default function DashboardPage() {
                   <option value="TRANSFERENCIA">🏦 Transferencia</option>
                 </select>
               </div>
+
+              {/* ← DESCUENTO GLOBAL */}
+<div className="mb-3">
+  <div className="flex items-center justify-between mb-1">
+    <label className="text-xs font-semibold text-slate-500 uppercase">
+      Descuento global
+    </label>
+    <div className="flex items-center gap-1">
+      <input
+        type="number" min="0" max="100"
+        value={descuentoGlobal}
+        onChange={(e) => setDescuentoGlobal(
+          Math.min(100, Math.max(0, Number(e.target.value)))
+        )}
+        className="w-16 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center
+          font-bold text-slate-700 bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+      />
+      <span className="text-sm text-slate-500">%</span>
+    </div>
+  </div>
+  {descuentoGlobal > 0 && (
+    <p className="text-xs text-right text-emerald-600 font-medium">
+      Ahorro: -S/ {descGlobalMonto.toFixed(2)}
+    </p>
+  )}
+</div>
+
+{/* tu bloque de total existente sigue aquí */}
+<div className="bg-slate-50 rounded-xl p-4 mb-4 ..."></div>
 
               {/* Total */}
               <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-100">
