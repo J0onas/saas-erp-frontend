@@ -630,9 +630,6 @@ export default function DashboardPage() {
   )}
 </div>
 
-{/* tu bloque de total existente sigue aquí */}
-<div className="bg-slate-50 rounded-xl p-4 mb-4 ..."></div>
-
               {/* Total */}
               <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-100">
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
