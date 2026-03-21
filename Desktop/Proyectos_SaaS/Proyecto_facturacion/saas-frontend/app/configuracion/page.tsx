@@ -20,7 +20,22 @@ export default function ConfiguracionPage() {
     email: '',
   });
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+  // Verificar rol antes de cargar
+  try {
+    const raw = localStorage.getItem('user_data');
+    if (!raw) { router.push('/login'); return; }
+    const user = JSON.parse(raw);
+    if (!['GERENTE', 'SUPERADMIN'].includes(user.role)) {
+      router.push('/dashboard');
+      return;
+    }
+  } catch {
+    router.push('/login');
+    return;
+  }
+  cargar();
+}, []);
 
   const token = () => localStorage.getItem('saas_token') || '';
 
