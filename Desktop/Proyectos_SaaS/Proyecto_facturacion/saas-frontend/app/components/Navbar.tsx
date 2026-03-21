@@ -3,120 +3,246 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const NAV_ITEMS = [
-    { href: '/dashboard',    label: 'POS',          icon: '🏪', roles: undefined },
-    { href: '/productos',    label: 'Inventario',   icon: '📦', roles: undefined },
-    { href: '/historial',    label: 'Comprobantes', icon: '📂', roles: undefined },
-    { href: '/reportes',     label: 'Reportes',     icon: '📊', roles: ['GERENTE', 'SUPERADMIN'] },
-    { href: '/proveedores',  label: 'Proveedores',  icon: '🚚', roles: ['GERENTE', 'SUPERADMIN'] },
-    { href: '/usuarios',     label: 'Usuarios',     icon: '👥', roles: ['GERENTE', 'SUPERADMIN'] },
-    { href: '/configuracion',label: 'Mi Empresa',   icon: '⚙️', roles: ['GERENTE', 'SUPERADMIN'] },
-];
-
-const ROLE_STYLES: Record<string, string> = {
-    SUPERADMIN: 'bg-purple-100 text-purple-700 border-purple-200',
-    GERENTE:    'bg-blue-100 text-blue-700 border-blue-200',
-    CAJERO:     'bg-slate-100 text-slate-600 border-slate-200',
+// ── SVG Icons ────────────────────────────────────────────────────────────────
+const Icons = {
+  pos: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>
+    </svg>
+  ),
+  inventory: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  ),
+  receipts: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+    </svg>
+  ),
+  reports: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  ),
+  suppliers: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  ),
+  logout: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  ),
+  lock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+    </svg>
+  ),
 };
 
-export default function Navbar({ cajaInfo }: { cajaInfo?: string }) {
-    const router   = useRouter();
-    const pathname = usePathname();
-    const [userRole, setUserRole] = useState<string>('CAJERO');
-    const [userName, setUserName] = useState<string>('');
+const NAV_ITEMS = [
+  { href: '/dashboard',     label: 'POS',          icon: Icons.pos,       roles: undefined },
+  { href: '/productos',     label: 'Inventario',   icon: Icons.inventory, roles: undefined },
+  { href: '/historial',     label: 'Comprobantes', icon: Icons.receipts,  roles: undefined },
+  { href: '/reportes',      label: 'Reportes',     icon: Icons.reports,   roles: ['GERENTE', 'SUPERADMIN'] },
+  { href: '/proveedores',   label: 'Proveedores',  icon: Icons.suppliers, roles: ['GERENTE', 'SUPERADMIN'] },
+  { href: '/usuarios',      label: 'Usuarios',     icon: Icons.users,     roles: ['GERENTE', 'SUPERADMIN'] },
+  { href: '/configuracion', label: 'Mi Empresa',   icon: Icons.settings,  roles: ['GERENTE', 'SUPERADMIN'] },
+];
 
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem('user_data');
-            if (raw) {
-                const user = JSON.parse(raw);
-                setUserRole(user.role || 'CAJERO');
-                setUserName(user.name || user.email || '');
-            }
-        } catch { /**/ }
-    }, []);
+const ROLE_COLORS: Record<string, string> = {
+  SUPERADMIN: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+  GERENTE:    'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  CAJERO:     'bg-slate-500/20 text-slate-300 border-slate-500/30',
+};
 
-    const cerrarSesion = () => {
-        localStorage.removeItem('saas_token');
-        localStorage.removeItem('user_data');
-        router.push('/login');
-    };
+export default function Navbar({ cajaInfo, onCerrarTurno }: {
+  cajaInfo?: string;
+  onCerrarTurno?: () => void;
+}) {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const [userRole, setUserRole] = useState('CAJERO');
+  const [userName, setUserName] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
 
-    const itemsVisibles = NAV_ITEMS.filter((item) => {
-        if (!item.roles) return true;
-        return item.roles.includes(userRole);
-    });
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user_data');
+      if (raw) {
+        const user = JSON.parse(raw);
+        setUserRole(user.role || 'CAJERO');
+        setUserName(user.name || user.email || '');
+      }
+    } catch { /**/ }
+  }, []);
 
-    return (
-        <nav className="bg-white border-b border-slate-200 sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-14">
+  const cerrarSesion = () => {
+    localStorage.removeItem('saas_token');
+    localStorage.removeItem('user_data');
+    router.push('/login');
+  };
 
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <span className="text-sm font-bold text-slate-800 hidden sm:block">SaaS POS</span>
-                        {cajaInfo && (
-                            <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold
-                                text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                {cajaInfo}
-                            </span>
-                        )}
-                    </div>
+  const itemsVisibles = NAV_ITEMS.filter((item) => {
+    if (!item.roles) return true;
+    return item.roles.includes(userRole);
+  });
 
-                    {/* Nav links */}
-                    <div className="flex items-center gap-0.5 overflow-x-auto">
-                        {itemsVisibles.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <button key={item.href} onClick={() => router.push(item.href)}
-                                    className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5
-                                        rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                                        isActive
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                                    }`}>
-                                    <span className="text-base leading-none">{item.icon}</span>
-                                    <span>{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+  return (
+    <>
+      {/* Sidebar */}
+      <aside className={`
+        fixed left-0 top-0 h-screen z-40 flex flex-col
+        bg-[#0f172a] border-r border-white/5
+        transition-all duration-300 ease-in-out
+        ${collapsed ? 'w-[68px]' : 'w-[220px]'}
+      `}>
 
-                    {/* Usuario + salir */}
-                    <div className="flex items-center gap-2">
-                        {userRole && (
-                            <div className="hidden sm:flex items-center gap-2">
-                                {userName && (
-                                    <span className="text-xs text-slate-500 font-medium max-w-[90px] truncate">
-                                        {userName}
-                                    </span>
-                                )}
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                                    ROLE_STYLES[userRole] || ROLE_STYLES.CAJERO
-                                }`}>
-                                    {userRole}
-                                </span>
-                            </div>
-                        )}
-                        <button onClick={cerrarSesion}
-                            className="flex items-center gap-1.5 text-sm font-medium text-slate-500
-                                hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="hidden sm:block">Salir</span>
-                        </button>
-                    </div>
-                </div>
+        {/* Logo + collapse toggle */}
+        <div className="flex items-center justify-between px-4 h-16 border-b border-white/5">
+          {!collapsed && (
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 text-white">{Icons.receipts}</div>
+              </div>
+              <span className="text-white font-bold text-sm tracking-wide">SaaS POS</span>
             </div>
+          )}
+          {collapsed && (
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center mx-auto">
+              <div className="w-4 h-4 text-white">{Icons.receipts}</div>
+            </div>
+          )}
+          {!collapsed && (
+            <button onClick={() => setCollapsed(true)}
+              className="text-slate-500 hover:text-slate-300 p-1 rounded-lg hover:bg-white/5 transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Caja abierta — efecto glass */}
+        {cajaInfo && (
+          <div className={`mx-3 mt-3 mb-1 ${collapsed ? 'px-0' : 'px-3'} py-2.5 rounded-xl
+            border border-emerald-500/25
+            bg-gradient-to-br from-emerald-500/15 to-emerald-600/5
+            backdrop-blur-sm`}>
+            {collapsed ? (
+              <div className="flex justify-center">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-emerald-300 text-xs font-semibold truncate">{cajaInfo}</p>
+                  <p className="text-emerald-500 text-[10px]">Turno activo</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Nav items */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {itemsVisibles.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <button key={item.href}
+                onClick={() => router.push(item.href)}
+                title={collapsed ? item.label : undefined}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+                  text-sm font-medium transition-all duration-150 group
+                  ${isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }
+                `}>
+                <div className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                  {item.icon}
+                </div>
+                {!collapsed && (
+                  <span className="truncate">{item.label}</span>
+                )}
+                {!collapsed && isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </nav>
-    );
+
+        {/* Bottom: user info + logout */}
+        <div className="border-t border-white/5 p-3 space-y-2">
+
+          {/* Cerrar turno */}
+          {onCerrarTurno && (
+            <button onClick={onCerrarTurno}
+              title={collapsed ? 'Cerrar turno' : undefined}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+                text-sm font-medium text-amber-400 hover:text-amber-300
+                hover:bg-amber-500/10 transition-all group">
+              <div className="w-5 h-5 flex-shrink-0">{Icons.lock}</div>
+              {!collapsed && <span>Cerrar turno</span>}
+            </button>
+          )}
+
+          {/* Usuario */}
+          {!collapsed && (
+            <div className="px-3 py-2 rounded-xl bg-white/5">
+              <p className="text-white text-xs font-semibold truncate">{userName || 'Usuario'}</p>
+              <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md border mt-0.5 ${
+                ROLE_COLORS[userRole] || ROLE_COLORS.CAJERO
+              }`}>
+                {userRole}
+              </span>
+            </div>
+          )}
+
+          {/* Logout */}
+          <button onClick={cerrarSesion}
+            title={collapsed ? 'Salir' : undefined}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+              text-sm font-medium text-slate-500 hover:text-red-400
+              hover:bg-red-500/10 transition-all group">
+            <div className="w-5 h-5 flex-shrink-0">{Icons.logout}</div>
+            {!collapsed && <span>Salir</span>}
+          </button>
+
+          {/* Expand button when collapsed */}
+          {collapsed && (
+            <button onClick={() => setCollapsed(false)}
+              className="w-full flex justify-center py-2 text-slate-500 hover:text-slate-300 transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+              </svg>
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* Spacer para el contenido */}
+      <div className={`transition-all duration-300 ${collapsed ? 'ml-[68px]' : 'ml-[220px]'}`} />
+    </>
+  );
 }
