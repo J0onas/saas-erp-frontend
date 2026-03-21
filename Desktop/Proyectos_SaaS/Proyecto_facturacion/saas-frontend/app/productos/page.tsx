@@ -15,6 +15,7 @@ export default function ProductosPage() {
     const router = useRouter();
     const [productos, setProductos]     = useState<any[]>([]);
     const [categorias, setCategorias]   = useState<any[]>([]);
+    const [proveedoresLista, setProveedoresLista] = useState<any[]>([]);
     const [cargando, setCargando]       = useState(true);
     const [busqueda, setBusqueda]       = useState('');
     const [filtroCategoria, setFiltroCategoria] = useState('');
@@ -38,7 +39,7 @@ export default function ProductosPage() {
         category_id: '', min_stock: '',
     });
     const [formCat, setFormCat]       = useState({ name: '', color: '#3b82f6' });
-    const [formIngreso, setFormIngreso] = useState({ quantity: '', reason: '', supplierName: '' });
+    const [formIngreso, setFormIngreso] = useState({ quantity: '', reason: '', supplierName: '', supplierId: '' });
     const [formAjuste, setFormAjuste]   = useState({ newStock: '', reason: '' });
 
     const [guardando, setGuardando]         = useState(false);
@@ -68,7 +69,7 @@ export default function ProductosPage() {
 
     const cargarTodo = async () => {
         setCargando(true);
-        await Promise.all([cargarProductos(), cargarCategorias()]);
+        await Promise.all([cargarProductos(), cargarCategorias(), cargarProveedores()]);
         setCargando(false);
     };
 
@@ -79,6 +80,12 @@ export default function ProductosPage() {
         const res  = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
         const data = await res.json();
         if (data.success) setProductos(data.data);
+    };
+
+    const cargarProveedores = async () => {
+        const res  = await fetch(`${API}/api/v1/suppliers?active=true`, { headers: { Authorization: `Bearer ${token()}` } });
+        const data = await res.json();
+        if (data.success) setProveedoresLista(data.data);
     };
 
     const cargarCategorias = async () => {
@@ -186,13 +193,14 @@ export default function ProductosPage() {
                     quantity: Number(formIngreso.quantity),
                     reason: formIngreso.reason || undefined,
                     supplierName: formIngreso.supplierName || undefined,
+                    supplierId: formIngreso.supplierId || undefined,
                 }),
             });
             const data = await res.json();
             if (data.success) {
                 mostrarMsg('ok', data.message);
                 setModalIngreso(null);
-                setFormIngreso({ quantity: '', reason: '', supplierName: '' });
+                setFormIngreso({ quantity: '', reason: '', supplierName: '', supplierId: '' });
                 cargarProductos(filtroCategoria || undefined);
             } else { mostrarMsg('err', data.message); }
         } finally { setProcesando(false); }
@@ -431,7 +439,7 @@ export default function ProductosPage() {
                                                             <button
                                                                 onClick={() => {
                                                                     setModalIngreso(prod);
-                                                                    setFormIngreso({ quantity: '', reason: '', supplierName: '' });
+                                                                    setFormIngreso({ quantity: '', reason: '', supplierName: '', supplierId: '' });
                                                                 }}
                                                                 className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700
                                                                     hover:bg-emerald-100 border border-emerald-200 transition text-xs font-medium">
@@ -803,11 +811,31 @@ export default function ProductosPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Proveedor</label>
-                                <input type="text" value={formIngreso.supplierName}
-                                    onChange={(e) => setFormIngreso(p => ({ ...p, supplierName: e.target.value }))}
-                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
-                                        text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-                                    placeholder="Ej. Distribuidora Lima SAC" />
+                                {proveedoresLista.length > 0 ? (
+                                    <select
+                                        value={formIngreso.supplierId}
+                                        onChange={(e) => {
+                                            const sel = proveedoresLista.find(p => p.id === e.target.value);
+                                            setFormIngreso(p => ({
+                                                ...p,
+                                                supplierId: e.target.value,
+                                                supplierName: sel?.name || '',
+                                            }));
+                                        }}
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
+                                            bg-white text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition">
+                                        <option value="">Sin proveedor</option>
+                                        {proveedoresLista.map((prov) => (
+                                            <option key={prov.id} value={prov.id}>{prov.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input type="text" value={formIngreso.supplierName}
+                                        onChange={(e) => setFormIngreso(p => ({ ...p, supplierName: e.target.value }))}
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
+                                            text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                        placeholder="Ej. Distribuidora Lima SAC" />
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Motivo</label>

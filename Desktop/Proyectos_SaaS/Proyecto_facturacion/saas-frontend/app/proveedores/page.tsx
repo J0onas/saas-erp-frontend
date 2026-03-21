@@ -11,6 +11,34 @@ const FORM_VACIO = {
     email: '', phone: '', address: '', notes: '',
 };
 
+// ── FIX: InputField FUERA del componente para evitar remount en cada tecla ──
+function InputField({
+    label, name, type = 'text', placeholder = '', required = false,
+    value, onChange,
+}: {
+    label: string; name: string; type?: string;
+    placeholder?: string; required?: boolean;
+    value: string; onChange: (name: string, value: string) => void;
+}) {
+    return (
+        <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                {label}{required && ' *'}
+            </label>
+            <input
+                type={type}
+                required={required}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                placeholder={placeholder}
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
+                    text-slate-800 bg-slate-50 focus:bg-white focus:ring-2
+                    focus:ring-blue-500 focus:outline-none transition"
+            />
+        </div>
+    );
+}
+
 export default function ProveedoresPage() {
     const router = useRouter();
     const [proveedores, setProveedores] = useState<any[]>([]);
@@ -19,33 +47,31 @@ export default function ProveedoresPage() {
     const [mensaje, setMensaje]         = useState({ tipo: '', texto: '' });
     const [verInactivos, setVerInactivos] = useState(false);
 
-    // Modal crear/editar
-    const [modalForm, setModalForm]     = useState<'crear' | 'editar' | null>(null);
-    const [provEditar, setProvEditar]   = useState<any>(null);
-    const [form, setForm]               = useState({ ...FORM_VACIO });
-    const [guardando, setGuardando]     = useState(false);
+    const [modalForm, setModalForm]   = useState<'crear' | 'editar' | null>(null);
+    const [provEditar, setProvEditar] = useState<any>(null);
+    const [form, setForm]             = useState({ ...FORM_VACIO });
+    const [guardando, setGuardando]   = useState(false);
 
-    // Panel historial
     const [provHistorial, setProvHistorial] = useState<any>(null);
     const [historial, setHistorial]         = useState<any[]>([]);
     const [cargandoHist, setCargandoHist]   = useState(false);
 
     const token = () => localStorage.getItem('saas_token') || '';
 
+    // Handler estable para InputField — no recrea en cada render
+    const handleField = (name: string, value: string) => {
+        setForm(p => ({ ...p, [name]: value }));
+    };
+
     useEffect(() => {
-        // Verificar rol
         try {
             const raw = localStorage.getItem('user_data');
             if (raw) {
                 const user = JSON.parse(raw);
                 if (!['GERENTE', 'SUPERADMIN'].includes(user.role)) {
-                    router.push('/dashboard');
-                    return;
+                    router.push('/dashboard'); return;
                 }
-            } else {
-                router.push('/login');
-                return;
-            }
+            } else { router.push('/login'); return; }
         } catch { router.push('/login'); return; }
         cargarProveedores();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,7 +119,7 @@ export default function ProveedoresPage() {
         setGuardando(true);
         try {
             const isEditar = modalForm === 'editar' && provEditar;
-            const url = isEditar
+            const url    = isEditar
                 ? `${API}/api/v1/suppliers/${provEditar.id}`
                 : `${API}/api/v1/suppliers`;
             const method = isEditar ? 'PATCH' : 'POST';
@@ -127,17 +153,10 @@ export default function ProveedoresPage() {
 
     const toggleActivo = async (prov: any) => {
         const nuevoEstado = !prov.active;
-        const confirmar = !nuevoEstado
-            ? confirm(`¿Desactivar a "${prov.name}"? Ya no aparecerá en las listas.`)
-            : true;
-        if (!confirmar) return;
-
+        if (!nuevoEstado && !confirm(`¿Desactivar a "${prov.name}"?`)) return;
         const res  = await fetch(`${API}/api/v1/suppliers/${prov.id}/toggle`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token()}`,
-            },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
             body: JSON.stringify({ active: nuevoEstado }),
         });
         const data = await res.json();
@@ -167,36 +186,12 @@ export default function ProveedoresPage() {
         );
     });
 
-    const InputField = ({
-        label, name, type = 'text', placeholder = '', required = false,
-    }: {
-        label: string; name: string; type?: string;
-        placeholder?: string; required?: boolean;
-    }) => (
-        <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                {label}{required && ' *'}
-            </label>
-            <input
-                type={type}
-                required={required}
-                value={(form as any)[name]}
-                onChange={(e) => setForm(p => ({ ...p, [name]: e.target.value }))}
-                placeholder={placeholder}
-                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
-                    text-slate-800 bg-slate-50 focus:bg-white focus:ring-2
-                    focus:ring-blue-500 focus:outline-none transition"
-            />
-        </div>
-    );
-
     return (
         <div className="min-h-screen bg-slate-50">
             <Navbar />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-black text-slate-900">Proveedores</h1>
@@ -224,7 +219,6 @@ export default function ProveedoresPage() {
                     </div>
                 )}
 
-                {/* Filtros */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                     <input type="text" value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
@@ -264,9 +258,7 @@ export default function ProveedoresPage() {
                                     {filtrados.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} className="px-5 py-10 text-center text-slate-400">
-                                                {busqueda
-                                                    ? `Sin resultados para "${busqueda}"`
-                                                    : 'No hay proveedores registrados.'}
+                                                {busqueda ? `Sin resultados para "${busqueda}"` : 'No hay proveedores registrados.'}
                                             </td>
                                         </tr>
                                     ) : filtrados.map((prov) => (
@@ -275,64 +267,38 @@ export default function ProveedoresPage() {
                                             <td className="px-5 py-4">
                                                 <div className="font-semibold text-slate-800">{prov.name}</div>
                                                 <div className="flex flex-wrap gap-3 mt-0.5">
-                                                    {prov.ruc && (
-                                                        <span className="text-xs font-mono text-slate-400">
-                                                            RUC: {prov.ruc}
-                                                        </span>
-                                                    )}
-                                                    {prov.contact_name && (
-                                                        <span className="text-xs text-slate-400">
-                                                            👤 {prov.contact_name}
-                                                        </span>
-                                                    )}
-                                                    {prov.phone && (
-                                                        <span className="text-xs text-slate-400">
-                                                            📞 {prov.phone}
-                                                        </span>
-                                                    )}
-                                                    {prov.email && (
-                                                        <span className="text-xs text-slate-400">
-                                                            ✉️ {prov.email}
-                                                        </span>
-                                                    )}
+                                                    {prov.ruc && <span className="text-xs font-mono text-slate-400">RUC: {prov.ruc}</span>}
+                                                    {prov.contact_name && <span className="text-xs text-slate-400">👤 {prov.contact_name}</span>}
+                                                    {prov.phone && <span className="text-xs text-slate-400">📞 {prov.phone}</span>}
+                                                    {prov.email && <span className="text-xs text-slate-400">✉️ {prov.email}</span>}
                                                 </div>
                                             </td>
                                             <td className="px-5 py-4 text-center">
-                                                <span className="text-sm font-bold text-slate-700">
-                                                    {prov.total_orders}
-                                                </span>
+                                                <span className="text-sm font-bold text-slate-700">{prov.total_orders}</span>
                                                 <span className="text-xs text-slate-400 ml-1">órdenes</span>
                                             </td>
                                             <td className="px-5 py-4 text-center">
-                                                <span className={`inline-flex items-center gap-1.5 text-xs
-                                                    font-semibold px-2.5 py-1 rounded-full border ${
+                                                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
                                                     prov.active
                                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                         : 'bg-slate-100 text-slate-500 border-slate-200'
                                                 }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${
-                                                        prov.active ? 'bg-emerald-500' : 'bg-slate-400'
-                                                    }`} />
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${prov.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                                                     {prov.active ? 'Activo' : 'Inactivo'}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <button onClick={() => abrirEditar(prov)}
-                                                        className="px-2.5 py-1.5 rounded-lg bg-slate-50
-                                                            text-slate-600 hover:bg-slate-100 border
-                                                            border-slate-200 transition text-xs font-medium">
+                                                        className="px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition text-xs font-medium">
                                                         Editar
                                                     </button>
                                                     <button onClick={() => verHistorial(prov)}
-                                                        className="px-2.5 py-1.5 rounded-lg bg-blue-50
-                                                            text-blue-600 hover:bg-blue-100 border
-                                                            border-blue-200 transition text-xs font-medium">
+                                                        className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition text-xs font-medium">
                                                         Historial
                                                     </button>
                                                     <button onClick={() => toggleActivo(prov)}
-                                                        className={`px-2.5 py-1.5 rounded-lg border
-                                                            transition text-xs font-medium ${
+                                                        className={`px-2.5 py-1.5 rounded-lg border transition text-xs font-medium ${
                                                             prov.active
                                                                 ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
                                                                 : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'
@@ -349,11 +315,6 @@ export default function ProveedoresPage() {
                         {!cargando && (
                             <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
                                 {filtrados.length} proveedor{filtrados.length !== 1 ? 'es' : ''}
-                                {filtrados.filter(p => p.active).length !== filtrados.length && (
-                                    <span className="ml-2 text-slate-400">
-                                        · {filtrados.filter(p => !p.active).length} inactivos
-                                    </span>
-                                )}
                             </div>
                         )}
                     </div>
@@ -362,9 +323,7 @@ export default function ProveedoresPage() {
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                             <h3 className="text-sm font-bold text-slate-700">
-                                {provHistorial
-                                    ? `Historial — ${provHistorial.name}`
-                                    : 'Historial de compras'}
+                                {provHistorial ? `Historial — ${provHistorial.name}` : 'Historial de compras'}
                             </h3>
                             {!provHistorial && (
                                 <p className="text-xs text-slate-400 mt-0.5">
@@ -384,20 +343,14 @@ export default function ProveedoresPage() {
                                 </div>
                             ) : historial.map((h) => (
                                 <div key={h.id}
-                                    className="flex items-start gap-3 px-4 py-3 border-b
-                                        border-slate-50 hover:bg-slate-50 transition">
-                                    <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700
-                                        flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                    className="flex items-start gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition">
+                                    <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
                                         ↑
                                     </span>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start">
-                                            <span className="text-xs font-bold text-slate-800 truncate">
-                                                {h.product_name}
-                                            </span>
-                                            <span className="text-xs font-bold text-emerald-700 ml-2 flex-shrink-0">
-                                                +{h.quantity} un.
-                                            </span>
+                                            <span className="text-xs font-bold text-slate-800 truncate">{h.product_name}</span>
+                                            <span className="text-xs font-bold text-emerald-700 ml-2 flex-shrink-0">+{h.quantity} un.</span>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-0.5 truncate">{h.reason}</p>
                                         <p className="text-xs text-slate-400 mt-0.5">{h.fecha}</p>
@@ -426,31 +379,38 @@ export default function ProveedoresPage() {
                         </div>
 
                         <form onSubmit={guardar} className="space-y-4">
+                            {/* Todos los InputField usan value + onChange estables */}
                             <InputField label="Nombre o razón social" name="name"
-                                placeholder="Ej. Distribuidora Lima SAC" required />
+                                placeholder="Ej. Distribuidora Lima SAC" required
+                                value={form.name} onChange={handleField} />
 
                             <div className="grid grid-cols-2 gap-4">
                                 <InputField label="RUC" name="ruc"
-                                    placeholder="20123456789" />
+                                    placeholder="20123456789"
+                                    value={form.ruc} onChange={handleField} />
                                 <InputField label="Teléfono / WhatsApp" name="phone"
-                                    placeholder="+51 999 999 999" />
+                                    placeholder="+51 999 999 999"
+                                    value={form.phone} onChange={handleField} />
                             </div>
 
                             <InputField label="Nombre del contacto" name="contact_name"
-                                placeholder="Ej. Juan Pérez" />
+                                placeholder="Ej. Juan Pérez"
+                                value={form.contact_name} onChange={handleField} />
 
                             <InputField label="Correo electrónico" name="email"
-                                type="email" placeholder="contacto@proveedor.com" />
+                                type="email" placeholder="contacto@proveedor.com"
+                                value={form.email} onChange={handleField} />
 
                             <InputField label="Dirección" name="address"
-                                placeholder="Av. Los Olivos 123, Lima" />
+                                placeholder="Av. Los Olivos 123, Lima"
+                                value={form.address} onChange={handleField} />
 
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Notas internas
                                 </label>
                                 <textarea value={form.notes}
-                                    onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
+                                    onChange={(e) => handleField('notes', e.target.value)}
                                     rows={2}
                                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5
                                         text-sm text-slate-800 bg-slate-50 focus:bg-white focus:ring-2
@@ -460,13 +420,11 @@ export default function ProveedoresPage() {
 
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setModalForm(null)}
-                                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700
-                                        py-3 rounded-xl font-semibold text-sm transition">
+                                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold text-sm transition">
                                     Cancelar
                                 </button>
                                 <button type="submit" disabled={guardando}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white
-                                        py-3 rounded-xl font-bold text-sm shadow-sm transition disabled:opacity-50">
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition disabled:opacity-50">
                                     {guardando
                                         ? 'Guardando...'
                                         : modalForm === 'crear' ? 'Crear proveedor' : 'Guardar cambios'}
