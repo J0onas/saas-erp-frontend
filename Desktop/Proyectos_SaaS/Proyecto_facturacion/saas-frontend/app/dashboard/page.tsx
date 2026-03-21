@@ -147,6 +147,25 @@ export default function DashboardPage() {
     } catch { setMostrarSugerencias(false); }
   };
 
+  const buscarPorBarcode = async (codigo: string) => {
+  const token = localStorage.getItem('saas_token');
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/barcode/${encodeURIComponent(codigo)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await res.json();
+    if (data.success && data.data) {
+      seleccionarProducto(data.data);
+    } else {
+      setErrorVenta(`Código "${codigo}" no encontrado en el catálogo.`);
+      setTimeout(() => setErrorVenta(''), 3000);
+    }
+  } catch {
+    console.error('Error buscando por barcode');
+  }
+};
+
   // ── AGREGAR AL CARRITO con validación de stock ────────────────────────────
   const seleccionarProducto = (producto: any) => {
     const stockDisponible = Number(producto.stock_quantity ?? 0);
@@ -210,6 +229,38 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!superaLimiteDetraccion) setAplicarDetraccion(false);
   }, [superaLimiteDetraccion]);
+
+  useEffect(() => {
+  let barcodeBuffer = '';
+  let barcodeTimeout: NodeJS.Timeout;
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Los lectores de barras envían chars muy rápido y terminan con Enter
+    if (e.key === 'Enter') {
+      if (barcodeBuffer.length >= 3) {
+        buscarPorBarcode(barcodeBuffer.trim());
+      }
+      barcodeBuffer = '';
+      clearTimeout(barcodeTimeout);
+      return;
+    }
+
+    // Solo capturar si no hay un input activo (para no interferir con formularios)
+    const active = document.activeElement as HTMLElement;
+    const esInputActivo = active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA';
+    if (esInputActivo) return;
+
+    if (e.key.length === 1) {
+      barcodeBuffer += e.key;
+      clearTimeout(barcodeTimeout);
+      // Limpiar buffer si no llega el Enter en 300ms (tipeo manual, no lector)
+      barcodeTimeout = setTimeout(() => { barcodeBuffer = ''; }, 300);
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [carrito]);
 
   const montoDetraccion = aplicarDetraccion ? (total * porcentajeDetraccion) / 100 : 0;
 
