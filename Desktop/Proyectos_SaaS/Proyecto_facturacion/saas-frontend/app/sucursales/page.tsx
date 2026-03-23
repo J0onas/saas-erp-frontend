@@ -6,10 +6,8 @@ import Navbar from '../components/Navbar';
 import PageWrapper from '../components/PageWrapper';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
-
 const FORM_VACIO = { name: '', address: '', phone: '' };
-
-type Vista = 'lista' | 'stock' | 'transferir' | 'stats';
+type Vista = 'stock' | 'transferir' | 'ingreso' | 'stats';
 
 export default function SucursalesPage() {
     const router = useRouter();
@@ -22,18 +20,19 @@ export default function SucursalesPage() {
     const [form, setForm]               = useState({ ...FORM_VACIO });
     const [guardando, setGuardando]     = useState(false);
 
-    // Panel lateral
     const [sucSeleccionada, setSucSeleccionada] = useState<any>(null);
     const [vista, setVista]             = useState<Vista>('stock');
     const [stockData, setStockData]     = useState<any[]>([]);
     const [statsData, setStatsData]     = useState<any>(null);
     const [cargandoPanel, setCargandoPanel] = useState(false);
 
-    // Transferencia
     const [transferForm, setTransferForm] = useState({
         fromBranchId: '', toBranchId: '', productId: '', quantity: '',
     });
-    const [transfiriendo, setTransfiriendo] = useState(false);
+    const [ingresoForm, setIngresoForm] = useState({
+        productId: '', quantity: '', reason: '',
+    });
+    const [procesando, setProcesando]   = useState(false);
 
     const token = () => localStorage.getItem('saas_token') || '';
 
@@ -66,59 +65,12 @@ export default function SucursalesPage() {
         } finally { setCargando(false); }
     };
 
-    const abrirCrear = () => {
-        setForm({ ...FORM_VACIO });
-        setSucEditar(null);
-        setModalForm('crear');
-    };
-
-    const abrirEditar = (suc: any) => {
-        setForm({ name: suc.name, address: suc.address || '', phone: suc.phone || '' });
-        setSucEditar(suc);
-        setModalForm('editar');
-    };
-
-    const guardar = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setGuardando(true);
-        try {
-            const isEditar = modalForm === 'editar' && sucEditar;
-            const url    = isEditar
-                ? `${API}/api/v1/branches/${sucEditar.id}`
-                : `${API}/api/v1/branches`;
-            const res = await fetch(url, {
-                method: isEditar ? 'PATCH' : 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-                body: JSON.stringify(form),
-            });
-            const data = await res.json();
-            if (data.success) {
-                mostrarMsg('ok', data.message);
-                setModalForm(null);
-                cargarSucursales();
-            } else {
-                mostrarMsg('err', data.message || 'Error al guardar.');
-            }
-        } finally { setGuardando(false); }
-    };
-
-    const toggleActivo = async (suc: any) => {
-        if (suc.is_main) { mostrarMsg('err', 'No puedes desactivar la sucursal principal.'); return; }
-        const res = await fetch(`${API}/api/v1/branches/${suc.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-            body: JSON.stringify({ is_active: !suc.is_active }),
-        });
-        const data = await res.json();
-        if (data.success) { mostrarMsg('ok', data.message); cargarSucursales(); }
-    };
-
     const seleccionarSucursal = async (suc: any, v: Vista = 'stock') => {
         setSucSeleccionada(suc);
         setVista(v);
         setCargandoPanel(true);
         try {
-            if (v === 'stock' || v === 'transferir') {
+            if (v === 'stock' || v === 'transferir' || v === 'ingreso') {
                 const res  = await fetch(`${API}/api/v1/branches/${suc.id}/stock`, {
                     headers: { Authorization: `Bearer ${token()}` },
                 });
@@ -126,6 +78,9 @@ export default function SucursalesPage() {
                 if (data.success) setStockData(data.data);
                 if (v === 'transferir') {
                     setTransferForm(p => ({ ...p, fromBranchId: suc.id, toBranchId: '', productId: '', quantity: '' }));
+                }
+                if (v === 'ingreso') {
+                    setIngresoForm({ productId: '', quantity: '', reason: '' });
                 }
             } else if (v === 'stats') {
                 const res  = await fetch(`${API}/api/v1/branches/${suc.id}/stats`, {
@@ -137,9 +92,31 @@ export default function SucursalesPage() {
         } finally { setCargandoPanel(false); }
     };
 
+    const guardar = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setGuardando(true);
+        try {
+            const isEditar = modalForm === 'editar' && sucEditar;
+            const res = await fetch(
+                isEditar ? `${API}/api/v1/branches/${sucEditar.id}` : `${API}/api/v1/branches`,
+                {
+                    method: isEditar ? 'PATCH' : 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+                    body: JSON.stringify(form),
+                }
+            );
+            const data = await res.json();
+            if (data.success) {
+                mostrarMsg('ok', data.message);
+                setModalForm(null);
+                cargarSucursales();
+            } else mostrarMsg('err', data.message || 'Error al guardar.');
+        } finally { setGuardando(false); }
+    };
+
     const realizarTransferencia = async (e: React.FormEvent) => {
         e.preventDefault();
-        setTransfiriendo(true);
+        setProcesando(true);
         try {
             const res = await fetch(`${API}/api/v1/branches/transfer`, {
                 method: 'POST',
@@ -157,11 +134,50 @@ export default function SucursalesPage() {
                 setTransferForm(p => ({ ...p, toBranchId: '', productId: '', quantity: '' }));
                 seleccionarSucursal(sucSeleccionada, 'transferir');
                 cargarSucursales();
-            } else {
-                mostrarMsg('err', data.message);
-            }
-        } finally { setTransfiriendo(false); }
+            } else mostrarMsg('err', data.message);
+        } finally { setProcesando(false); }
     };
+
+    const realizarIngreso = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setProcesando(true);
+        try {
+            const res = await fetch(`${API}/api/v1/branches/${sucSeleccionada.id}/stock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+                body: JSON.stringify({
+                    productId: ingresoForm.productId,
+                    quantity:  Number(ingresoForm.quantity),
+                    reason:    ingresoForm.reason || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                mostrarMsg('ok', data.message);
+                setIngresoForm({ productId: '', quantity: '', reason: '' });
+                seleccionarSucursal(sucSeleccionada, 'ingreso');
+                cargarSucursales();
+            } else mostrarMsg('err', data.message);
+        } finally { setProcesando(false); }
+    };
+
+    const toggleActivo = async (suc: any) => {
+        if (suc.is_main) { mostrarMsg('err', 'No puedes desactivar la sucursal principal.'); return; }
+        const res = await fetch(`${API}/api/v1/branches/${suc.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+            body: JSON.stringify({ is_active: !suc.is_active }),
+        });
+        const data = await res.json();
+        if (data.success) { mostrarMsg('ok', data.message); cargarSucursales(); }
+    };
+
+    const VISTAS: { key: Vista; label: string }[] = [
+        { key: 'stock',      label: 'Stock' },
+        { key: 'ingreso',    label: '+Stock' },
+        { key: 'transferir', label: 'Transferir' },
+        { key: 'stats',      label: 'Estadísticas' },
+    ];
 
     return (
         <div className="bg-slate-50">
@@ -169,17 +185,15 @@ export default function SucursalesPage() {
             <PageWrapper>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-                    {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
                             <h1 className="text-2xl font-black text-slate-900">Sucursales</h1>
                             <p className="text-slate-500 text-sm mt-1">
-                                Gestiona tus puntos de venta y stock por ubicación.
+                                Gestiona tus puntos de venta, stock y rendimiento por ubicación.
                             </p>
                         </div>
-                        <button onClick={abrirCrear}
-                            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700
-                                text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition">
+                        <button onClick={() => { setForm({ ...FORM_VACIO }); setSucEditar(null); setModalForm('crear'); }}
+                            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -205,10 +219,6 @@ export default function SucursalesPage() {
                                 <div className="bg-white rounded-2xl border border-slate-200 p-8 flex justify-center">
                                     <div className="animate-spin h-5 w-5 border-2 border-slate-200 border-t-blue-600 rounded-full" />
                                 </div>
-                            ) : sucursales.length === 0 ? (
-                                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
-                                    No hay sucursales registradas.
-                                </div>
                             ) : sucursales.map((suc) => (
                                 <div key={suc.id}
                                     className={`bg-white rounded-2xl border transition-all cursor-pointer ${
@@ -216,40 +226,33 @@ export default function SucursalesPage() {
                                             ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                                             : 'border-slate-200 hover:border-slate-300 shadow-sm'
                                     } ${!suc.is_active ? 'opacity-60' : ''}`}
-                                    onClick={() => seleccionarSucursal(suc, 'stock')}>
+                                    onClick={() => seleccionarSucursal(suc, vista)}>
                                     <div className="p-4">
-                                        <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-start justify-between gap-2 mb-2">
                                             <div className="min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-bold text-slate-800 truncate">{suc.name}</h3>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="font-bold text-slate-800">{suc.name}</h3>
                                                     {suc.is_main && (
-                                                        <span className="text-[10px] font-black px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-md flex-shrink-0">
+                                                        <span className="text-[10px] font-black px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-md">
                                                             PRINCIPAL
                                                         </span>
                                                     )}
                                                 </div>
-                                                {suc.address && (
-                                                    <p className="text-xs text-slate-400 mt-0.5 truncate">{suc.address}</p>
-                                                )}
-                                                {suc.phone && (
-                                                    <p className="text-xs text-slate-400">{suc.phone}</p>
-                                                )}
+                                                {suc.address && <p className="text-xs text-slate-400 mt-0.5">{suc.address}</p>}
+                                                {suc.phone && <p className="text-xs text-slate-400">{suc.phone}</p>}
                                             </div>
                                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                                                suc.is_active
-                                                    ? 'bg-emerald-100 text-emerald-700'
-                                                    : 'bg-slate-100 text-slate-500'
+                                                suc.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                                             }`}>
                                                 {suc.is_active ? 'Activa' : 'Inactiva'}
                                             </span>
                                         </div>
 
-                                        {/* Métricas rápidas */}
-                                        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100">
+                                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 my-2">
                                             {[
                                                 { label: 'Usuarios', val: suc.total_users },
                                                 { label: 'Facturas', val: suc.total_invoices },
-                                                { label: 'Facturado', val: `S/${Number(suc.total_revenue).toFixed(0)}` },
+                                                { label: 'Facturado', val: `S/${Number(suc.total_revenue || 0).toFixed(0)}` },
                                             ].map((item) => (
                                                 <div key={item.label} className="text-center">
                                                     <p className="text-xs font-black text-slate-800">{item.val}</p>
@@ -258,19 +261,10 @@ export default function SucursalesPage() {
                                             ))}
                                         </div>
 
-                                        {/* Acciones */}
-                                        <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => abrirEditar(suc)}
+                                        <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => { setForm({ name: suc.name, address: suc.address||'', phone: suc.phone||'' }); setSucEditar(suc); setModalForm('editar'); }}
                                                 className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium transition">
                                                 Editar
-                                            </button>
-                                            <button onClick={() => seleccionarSucursal(suc, 'transferir')}
-                                                className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs font-medium transition">
-                                                Transferir
-                                            </button>
-                                            <button onClick={() => seleccionarSucursal(suc, 'stats')}
-                                                className="flex-1 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-600 border border-purple-200 rounded-lg text-xs font-medium transition">
-                                                Stats
                                             </button>
                                             {!suc.is_main && (
                                                 <button onClick={() => toggleActivo(suc)}
@@ -296,27 +290,27 @@ export default function SucursalesPage() {
                                         <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                         </svg>
-                                        <p className="text-sm">Selecciona una sucursal para ver su información</p>
+                                        <p className="text-sm">Selecciona una sucursal</p>
                                     </div>
                                 </div>
                             ) : (
                                 <>
-                                    {/* Header del panel */}
+                                    {/* Header */}
                                     <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                                         <div>
                                             <h3 className="font-bold text-slate-800">{sucSeleccionada.name}</h3>
-                                            <p className="text-xs text-slate-400 mt-0.5">{sucSeleccionada.address || 'Sin dirección'}</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{sucSeleccionada.address || 'Sin dirección registrada'}</p>
                                         </div>
-                                        <div className="flex gap-1.5">
-                                            {(['stock', 'transferir', 'stats'] as Vista[]).map((v) => (
-                                                <button key={v}
-                                                    onClick={() => seleccionarSucursal(sucSeleccionada, v)}
+                                        <div className="flex gap-1.5 flex-wrap">
+                                            {VISTAS.map((v) => (
+                                                <button key={v.key}
+                                                    onClick={() => seleccionarSucursal(sucSeleccionada, v.key)}
                                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                                        vista === v
+                                                        vista === v.key
                                                             ? 'bg-blue-600 text-white'
                                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                     }`}>
-                                                    {v === 'stock' ? 'Stock' : v === 'transferir' ? 'Transferir' : 'Estadísticas'}
+                                                    {v.label}
                                                 </button>
                                             ))}
                                         </div>
@@ -328,7 +322,7 @@ export default function SucursalesPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            {/* VISTA STOCK */}
+                                            {/* STOCK */}
                                             {vista === 'stock' && (
                                                 <div className="overflow-auto max-h-[520px]">
                                                     <table className="w-full text-sm">
@@ -340,36 +334,22 @@ export default function SucursalesPage() {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-50">
-                                                            {stockData.length === 0 ? (
-                                                                <tr>
-                                                                    <td colSpan={3} className="px-5 py-8 text-center text-slate-400 text-sm">
-                                                                        Sin productos registrados.
-                                                                    </td>
-                                                                </tr>
-                                                            ) : stockData.map((item) => {
-                                                                const branchQty = Number(item.branch_quantity);
-                                                                const stockOk = branchQty > 5;
-                                                                const stockLow = branchQty > 0 && branchQty <= 5;
+                                                            {stockData.map((item) => {
+                                                                const qty = Number(item.branch_quantity);
                                                                 return (
-                                                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                                                    <tr key={item.id} className="hover:bg-slate-50">
                                                                         <td className="px-5 py-3.5">
                                                                             <div className="font-medium text-slate-800">{item.name}</div>
-                                                                            {item.category_name && (
-                                                                                <div className="text-xs text-slate-400">{item.category_name}</div>
-                                                                            )}
+                                                                            {item.category_name && <div className="text-xs text-slate-400">{item.category_name}</div>}
                                                                         </td>
                                                                         <td className="px-5 py-3.5 text-center">
                                                                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
-                                                                                branchQty <= 0
-                                                                                    ? 'bg-red-100 text-red-600'
-                                                                                    : stockLow
-                                                                                    ? 'bg-amber-100 text-amber-700'
-                                                                                    : 'bg-emerald-100 text-emerald-700'
+                                                                                qty <= 0 ? 'bg-red-100 text-red-600' :
+                                                                                qty <= 5 ? 'bg-amber-100 text-amber-700' :
+                                                                                'bg-emerald-100 text-emerald-700'
                                                                             }`}>
-                                                                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                                                                    branchQty <= 0 ? 'bg-red-500' : stockLow ? 'bg-amber-500' : 'bg-emerald-500'
-                                                                                }`} />
-                                                                                {branchQty} un.
+                                                                                <span className={`w-1.5 h-1.5 rounded-full ${qty <= 0 ? 'bg-red-500' : qty <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                                                                {qty} un.
                                                                             </span>
                                                                         </td>
                                                                         <td className="px-5 py-3.5 text-center text-slate-500 text-sm font-medium">
@@ -383,7 +363,51 @@ export default function SucursalesPage() {
                                                 </div>
                                             )}
 
-                                            {/* VISTA TRANSFERIR */}
+                                            {/* INGRESO DIRECTO */}
+                                            {vista === 'ingreso' && (
+                                                <div className="p-6">
+                                                    <p className="text-sm text-slate-500 mb-5">
+                                                        Agrega stock directamente a <strong>{sucSeleccionada.name}</strong> sin necesidad de transferencia.
+                                                    </p>
+                                                    <form onSubmit={realizarIngreso} className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Producto *</label>
+                                                            <select required value={ingresoForm.productId}
+                                                                onChange={(e) => setIngresoForm(p => ({ ...p, productId: e.target.value }))}
+                                                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                                <option value="">Seleccionar producto...</option>
+                                                                {stockData.map(item => (
+                                                                    <option key={item.id} value={item.id}>
+                                                                        {item.name} — {item.branch_quantity} en sucursal
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cantidad a ingresar *</label>
+                                                            <input type="number" required min="1"
+                                                                value={ingresoForm.quantity}
+                                                                onChange={(e) => setIngresoForm(p => ({ ...p, quantity: e.target.value }))}
+                                                                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                                                placeholder="0" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Motivo (opcional)</label>
+                                                            <input type="text"
+                                                                value={ingresoForm.reason}
+                                                                onChange={(e) => setIngresoForm(p => ({ ...p, reason: e.target.value }))}
+                                                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                                                                placeholder="Ej. Compra a proveedor, inventario inicial..." />
+                                                        </div>
+                                                        <button type="submit" disabled={procesando}
+                                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition disabled:opacity-50">
+                                                            {procesando ? 'Registrando...' : 'Registrar ingreso de stock'}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            )}
+
+                                            {/* TRANSFERIR */}
                                             {vista === 'transferir' && (
                                                 <div className="p-6">
                                                     <p className="text-sm text-slate-500 mb-5">
@@ -391,68 +415,56 @@ export default function SucursalesPage() {
                                                     </p>
                                                     <form onSubmit={realizarTransferencia} className="space-y-4">
                                                         <div>
-                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                                                Sucursal destino *
-                                                            </label>
-                                                            <select required
-                                                                value={transferForm.toBranchId}
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Sucursal destino *</label>
+                                                            <select required value={transferForm.toBranchId}
                                                                 onChange={(e) => setTransferForm(p => ({ ...p, toBranchId: e.target.value }))}
                                                                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                                                                 <option value="">Seleccionar sucursal...</option>
-                                                                {sucursales
-                                                                    .filter(s => s.id !== sucSeleccionada.id && s.is_active)
-                                                                    .map(s => (
-                                                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                                                    ))}
+                                                                {sucursales.filter(s => s.id !== sucSeleccionada.id && s.is_active).map(s => (
+                                                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                                                ))}
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                                                Producto *
-                                                            </label>
-                                                            <select required
-                                                                value={transferForm.productId}
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Producto *</label>
+                                                            <select required value={transferForm.productId}
                                                                 onChange={(e) => setTransferForm(p => ({ ...p, productId: e.target.value }))}
                                                                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                                                                 <option value="">Seleccionar producto...</option>
-                                                                {stockData
-                                                                    .filter(item => Number(item.branch_quantity) > 0)
-                                                                    .map(item => (
-                                                                        <option key={item.id} value={item.id}>
-                                                                            {item.name} — {item.branch_quantity} disponibles
-                                                                        </option>
-                                                                    ))}
+                                                                {stockData.filter(item => Number(item.branch_quantity) > 0).map(item => (
+                                                                    <option key={item.id} value={item.id}>
+                                                                        {item.name} — {item.branch_quantity} disponibles
+                                                                    </option>
+                                                                ))}
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                                                Cantidad *
-                                                            </label>
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cantidad *</label>
                                                             <input type="number" required min="1"
                                                                 value={transferForm.quantity}
                                                                 onChange={(e) => setTransferForm(p => ({ ...p, quantity: e.target.value }))}
                                                                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                                                 placeholder="0" />
                                                         </div>
-                                                        <button type="submit" disabled={transfiriendo}
+                                                        <button type="submit" disabled={procesando}
                                                             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition disabled:opacity-50">
-                                                            {transfiriendo ? 'Transfiriendo...' : 'Confirmar transferencia'}
+                                                            {procesando ? 'Transfiriendo...' : 'Confirmar transferencia'}
                                                         </button>
                                                     </form>
                                                 </div>
                                             )}
 
-                                            {/* VISTA STATS */}
+                                            {/* STATS */}
                                             {vista === 'stats' && statsData && (
-                                                <div className="p-6 space-y-5">
+                                                <div className="p-6 space-y-6">
                                                     <div className="grid grid-cols-3 gap-4">
                                                         {[
-                                                            { label: 'Facturas totales', val: statsData.stats.total_invoices },
-                                                            { label: 'Facturado total',  val: `S/ ${Number(statsData.stats.total_revenue).toFixed(2)}` },
-                                                            { label: 'Ticket promedio',  val: `S/ ${Number(statsData.stats.avg_ticket).toFixed(2)}` },
+                                                            { label: 'Facturas totales', val: statsData.stats.total_invoices, color: 'text-blue-600' },
+                                                            { label: 'Total facturado', val: `S/ ${Number(statsData.stats.total_revenue).toFixed(2)}`, color: 'text-emerald-600' },
+                                                            { label: 'Ticket promedio', val: `S/ ${Number(statsData.stats.avg_ticket).toFixed(2)}`, color: 'text-purple-600' },
                                                         ].map((kpi) => (
                                                             <div key={kpi.label} className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-center">
-                                                                <p className="text-xl font-black text-blue-600">{kpi.val}</p>
+                                                                <p className={`text-xl font-black ${kpi.color}`}>{kpi.val}</p>
                                                                 <p className="text-xs text-slate-500 mt-1">{kpi.label}</p>
                                                             </div>
                                                         ))}
@@ -469,12 +481,9 @@ export default function SucursalesPage() {
                                                                         <div key={d.date} className="flex items-center gap-3">
                                                                             <span className="text-xs font-mono text-slate-400 w-12">{d.date}</span>
                                                                             <div className="flex-1 bg-slate-100 rounded-full h-2">
-                                                                                <div className="bg-blue-500 h-2 rounded-full transition-all"
-                                                                                    style={{ width: `${pct}%` }} />
+                                                                                <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
                                                                             </div>
-                                                                            <span className="text-xs font-bold text-slate-700 w-20 text-right">
-                                                                                S/ {Number(d.total).toFixed(0)}
-                                                                            </span>
+                                                                            <span className="text-xs font-bold text-slate-700 w-20 text-right">S/ {Number(d.total).toFixed(0)}</span>
                                                                         </div>
                                                                     );
                                                                 })}
@@ -482,9 +491,30 @@ export default function SucursalesPage() {
                                                         </div>
                                                     )}
 
-                                                    {(!statsData.lastDays || statsData.lastDays.length === 0) && (
+                                                    {statsData.topProducts?.length > 0 && (
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-500 uppercase mb-3">Top productos vendidos</p>
+                                                            <div className="space-y-2">
+                                                                {statsData.topProducts.map((p: any, i: number) => (
+                                                                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs font-black text-slate-400 w-5">{i + 1}</span>
+                                                                            <span className="text-sm font-medium text-slate-800">{p.name}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-4 text-xs">
+                                                                            <span className="text-slate-500">{p.total_sold} un.</span>
+                                                                            <span className="font-bold text-emerald-600">S/ {Number(p.revenue).toFixed(2)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {(!statsData.lastDays?.length && !statsData.topProducts?.length) && (
                                                         <div className="text-center text-slate-400 text-sm py-4">
-                                                            Sin ventas registradas en esta sucursal.
+                                                            Sin ventas registradas en esta sucursal aún.<br/>
+                                                            <span className="text-xs">Las ventas se asocian automáticamente cuando el cajero selecciona esta sucursal en el POS.</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -498,7 +528,7 @@ export default function SucursalesPage() {
                 </div>
             </PageWrapper>
 
-            {/* ── MODAL CREAR / EDITAR ──────────────────────────────────────── */}
+            {/* MODAL CREAR / EDITAR */}
             {modalForm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
@@ -515,9 +545,7 @@ export default function SucursalesPage() {
                         </div>
                         <form onSubmit={guardar} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                    Nombre de la sucursal *
-                                </label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre *</label>
                                 <input type="text" required value={form.name}
                                     onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
                                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"

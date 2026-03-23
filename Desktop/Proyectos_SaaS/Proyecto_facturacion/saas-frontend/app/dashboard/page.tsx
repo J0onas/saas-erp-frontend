@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import PageWrapper from '../components/PageWrapper';
+import BranchSelector from '../components/BranchSelector';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   const [sunatMessage, setSunatMessage] = useState('');
   const [descuentoGlobal, setDescuentoGlobal] = useState(0); // porcentaje 0-100
   const [descuentoItems, setDescuentoItems] = useState<Record<string, number>>({}); // { productId: porcentaje }
+  const [branchSeleccionada, setBranchSeleccionada] = useState<{id:string;name:string}|null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('saas_token');
@@ -307,6 +309,7 @@ export default function DashboardPage() {
       detractionPercent: aplicarDetraccion ? porcentajeDetraccion : 0,
       detractionAmount: Number(montoDetraccion.toFixed(2)),
       currency: 'PEN',
+      branchId: branchSeleccionada?.id || null,
       tipoComprobante: tipoComprobante,
       // supplier ya no se envía: el backend lo obtiene desde company_settings
       supplier: { ruc: '', businessName: '', addressCode: '0000' },
@@ -425,7 +428,7 @@ export default function DashboardPage() {
   return (
     <div className="bg-slate-50">
       <Navbar
-        cajaInfo={cajaAbierta ? 'Caja abierta' : undefined}
+        cajaInfo={cajaAbierta ? (branchSeleccionada?.name || 'Caja abierta') : undefined}
         onCerrarTurno={() => setMostrarModalCierre(true)}
       />
       <PageWrapper>
@@ -437,6 +440,9 @@ export default function DashboardPage() {
             
             {/* Buscador */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4">
+              <div className="mb-3">
+                <BranchSelector onBranchChange={setBranchSeleccionada} />
+              </div>
               <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Buscar producto</h2>
               <div className="relative">
                 <div className="absolute left-4 top-3.5 text-slate-400">
