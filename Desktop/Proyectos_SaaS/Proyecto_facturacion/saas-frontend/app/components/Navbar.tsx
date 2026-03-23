@@ -73,6 +73,8 @@ const ROLE_COLORS: Record<string, string> = {
   CAJERO:     'bg-slate-500/20 text-slate-300 border-slate-500/30',
 };
 
+const COLLAPSED_KEY = 'sidebar_collapsed';
+
 export default function Navbar({ cajaInfo, onCerrarTurno }: {
   cajaInfo?: string;
   onCerrarTurno?: () => void;
@@ -91,8 +93,25 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
         setUserRole(user.role || 'CAJERO');
         setUserName(user.name || user.email || '');
       }
+
+      const savedCollapsed = localStorage.getItem(COLLAPSED_KEY);
+      if (savedCollapsed !== null) {
+        setCollapsed(savedCollapsed === 'true');
+      }
     } catch { /**/ }
   }, []);
+
+  const setSidebarCollapsed = (nextCollapsed: boolean) => {
+    setCollapsed(nextCollapsed);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, String(nextCollapsed));
+      window.dispatchEvent(
+        new CustomEvent('sidebar-toggle', { detail: { collapsed: nextCollapsed } }),
+      );
+    } catch {
+      // Ignore storage/event errors in restricted environments.
+    }
+  };
 
   const cerrarSesion = () => {
     localStorage.removeItem('saas_token');
@@ -131,7 +150,7 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
             </div>
           )}
           {!collapsed && (
-            <button onClick={() => setCollapsed(true)}
+            <button onClick={() => setSidebarCollapsed(true)}
               className="text-slate-500 hover:text-slate-300 p-1 rounded-lg hover:bg-white/5 transition">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
@@ -231,7 +250,7 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
 
           {/* Expand button when collapsed */}
           {collapsed && (
-            <button onClick={() => setCollapsed(false)}
+            <button onClick={() => setSidebarCollapsed(false)}
               className="w-full flex justify-center py-2 text-slate-500 hover:text-slate-300 transition">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7"/>

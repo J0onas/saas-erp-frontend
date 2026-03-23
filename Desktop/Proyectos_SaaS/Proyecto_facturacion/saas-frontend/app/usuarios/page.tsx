@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import PageWrapper from '../components/PageWrapper';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -119,9 +120,10 @@ export default function UsuariosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-slate-50">
       <Navbar />
 
+      <PageWrapper>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* Header */}
@@ -274,6 +276,7 @@ export default function UsuariosPage() {
           )}
         </div>
       </div>
+      </PageWrapper>
 
       {/* Modal agregar usuario */}
       {mostrarModal && (

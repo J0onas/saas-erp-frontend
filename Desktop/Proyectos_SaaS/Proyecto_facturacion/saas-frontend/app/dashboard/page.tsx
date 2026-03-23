@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import PageWrapper from '../components/PageWrapper';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -72,7 +73,6 @@ export default function DashboardPage() {
       setCajaVerificada(true);
     }
   };
-
   const handleAbrirCaja = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!montoInicial) return;
@@ -423,9 +423,12 @@ export default function DashboardPage() {
 
   // ── POS PRINCIPAL ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar cajaInfo="Caja abierta" onCerrarTurno={() => setMostrarModalCierre(true)} />
-
+    <div className="bg-slate-50">
+      <Navbar
+        cajaInfo={cajaAbierta ? 'Caja abierta' : undefined}
+        onCerrarTurno={() => setMostrarModalCierre(true)}
+      />
+      <PageWrapper>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -791,6 +794,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      </PageWrapper>
 
       {/* Modal cierre de caja */}
       {mostrarModalCierre && (
@@ -824,6 +828,7 @@ export default function DashboardPage() {
               </div>
             </form>
           </div>
+          
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import PageWrapper from '../components/PageWrapper';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as TooltipBar,
   PieChart, Pie, Cell, Tooltip as TooltipPie, Legend, ResponsiveContainer,
@@ -71,9 +72,10 @@ export default function ReportesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-slate-50">
       <Navbar />
 
+      <PageWrapper>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -223,6 +225,7 @@ export default function ReportesPage() {
           </div>
         )}
       </div>
+      </PageWrapper>
     </div>
   );
 }

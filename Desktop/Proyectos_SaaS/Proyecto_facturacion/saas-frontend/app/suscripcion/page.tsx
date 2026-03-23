@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SuscripcionPage() {
-  const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   
   // Aquí simularemos el inicio del pago. Más adelante esto llamará a Stripe/MercadoPago.

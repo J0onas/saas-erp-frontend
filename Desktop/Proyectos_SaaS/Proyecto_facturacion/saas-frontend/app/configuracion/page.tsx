@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import PageWrapper from '../components/PageWrapper';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -35,6 +36,7 @@ export default function ConfiguracionPage() {
     return;
   }
   cargar();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
   const token = () => localStorage.getItem('saas_token') || '';
@@ -78,9 +80,10 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-slate-50">
       <Navbar />
 
+      <PageWrapper>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <div className="mb-6">
@@ -198,6 +201,7 @@ export default function ConfiguracionPage() {
           )}
         </div>
       </div>
+      </PageWrapper>
     </div>
   );
 }
