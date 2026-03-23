@@ -426,6 +426,11 @@ export default function SuperadminPage() {
                                                         <td className="px-5 py-4">
                                                             <div className="font-semibold text-slate-800">{t.business_name}</div>
                                                             <div className="text-xs font-mono text-slate-400 mt-0.5">RUC: {t.ruc}</div>
+                                                            {t.plan_name && (
+                                                                <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">
+                                                                    {t.plan_name}
+                                                                </span>
+                                                            )}
                                                             <div className="text-xs text-slate-400">Desde: {t.created_at}</div>
                                                         </td>
                                                         <td className="px-5 py-4 text-center">
