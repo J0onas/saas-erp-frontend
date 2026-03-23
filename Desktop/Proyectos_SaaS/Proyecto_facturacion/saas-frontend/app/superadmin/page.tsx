@@ -21,12 +21,64 @@ const STATUS_LABELS: Record<string, string> = {
     SUSPENDED: 'Suspendido',
 };
 
-type Tab = 'metrics' | 'tenants' | 'logs';
+type Tab = 'metrics' | 'tenants' | 'logs' | 'planes';
+
+function AsignarPlanForm({ planes, token, API, onSuccess }: {
+    planes: any[]; token: () => string; API: string; onSuccess?: () => void;
+}) {
+    const [tenantId, setTenantId] = useState('');
+    const [planId, setPlanId]     = useState('');
+    const [msg, setMsg]           = useState('');
+    const [loading, setLoading]   = useState(false);
+
+    const asignar = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch(`${API}/api/v1/plans/assign`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+                body: JSON.stringify({ tenantId, planId }),
+            });
+            const data = await res.json();
+            setMsg(data.message);
+            if (data.success) { setTenantId(''); setPlanId(''); onSuccess?.(); }
+        } finally { setLoading(false); }
+    };
+
+    return (
+        <form onSubmit={asignar} className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-48">
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">UUID del Tenant</label>
+                <input type="text" required value={tenantId}
+                    onChange={(e) => setTenantId(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-700 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Plan</label>
+                <select required value={planId} onChange={(e) => setPlanId(e.target.value)}
+                    className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                    <option value="">Seleccionar...</option>
+                    {planes.map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.display_name}</option>
+                    ))}
+                </select>
+            </div>
+            <button type="submit" disabled={loading}
+                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold transition disabled:opacity-50">
+                {loading ? 'Asignando...' : 'Asignar plan'}
+            </button>
+            {msg && <p className="w-full text-sm text-emerald-600 font-medium">{msg}</p>}
+        </form>
+    );
+}
 
 export default function SuperadminPage() {
     const router = useRouter();
     const [tab, setTab]             = useState<Tab>('metrics');
     const [metrics, setMetrics]     = useState<any>(null);
+    const [planes, setPlanes]       = useState<any[]>([]);
     const [tenants, setTenants]     = useState<any[]>([]);
     const [logs, setLogs]           = useState<any[]>([]);
     const [cargando, setCargando]   = useState(true);
@@ -58,7 +110,7 @@ export default function SuperadminPage() {
 
     const cargarTodo = async () => {
         setCargando(true);
-        await Promise.all([cargarMetrics(), cargarTenants(), cargarLogs()]);
+        await Promise.all([cargarMetrics(), cargarTenants(), cargarLogs(), cargarPlanes()]);
         setCargando(false);
     };
 
@@ -94,6 +146,14 @@ export default function SuperadminPage() {
             const data = await res.json();
             if (data.success) setLogs(data.data);
         } catch { /* */ }
+    };
+
+    const cargarPlanes = async () => {
+        try {
+            const res  = await fetch(`${API}/api/v1/plans`);
+            const data = await res.json();
+            if (data.success) setPlanes(data.data);
+        } catch { }
     };
 
     const verDetalle = async (tenant: any) => {
@@ -181,6 +241,7 @@ export default function SuperadminPage() {
                             { key: 'metrics', label: 'Métricas' },
                             { key: 'tenants', label: 'Tenants' },
                             { key: 'logs',    label: 'Audit Log' },
+                            { key: 'planes',  label: 'Planes' },
                         ] as { key: Tab; label: string }[]).map((t) => (
                             <button key={t.key} onClick={() => setTab(t.key)}
                                 className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
@@ -543,6 +604,44 @@ export default function SuperadminPage() {
                                             ))}
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'planes' && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {planes.map((plan) => (
+                                        <div key={plan.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase">{plan.name}</span>
+                                                    <h3 className="font-black text-slate-900">{plan.display_name}</h3>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xl font-black text-purple-600">S/ {plan.price_monthly}</p>
+                                                    <p className="text-xs text-slate-400">/mes</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-5 space-y-3">
+                                                {[
+                                                    { label: 'Usuarios',     val: plan.max_users       === -1 ? 'Ilimitados' : plan.max_users },
+                                                    { label: 'Productos',    val: plan.max_products    === -1 ? 'Ilimitados' : plan.max_products },
+                                                    { label: 'Facturas/mes', val: plan.max_invoices_mo === -1 ? 'Ilimitadas' : plan.max_invoices_mo },
+                                                    { label: 'Precio anual', val: `S/ ${plan.price_yearly}` },
+                                                ].map((item) => (
+                                                    <div key={item.label} className="flex justify-between text-sm">
+                                                        <span className="text-slate-500">{item.label}</span>
+                                                        <span className="font-bold text-slate-800">{item.val}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                                    <h3 className="font-bold text-slate-700 mb-4">Asignar plan a tenant</h3>
+                                    <AsignarPlanForm planes={planes} token={token} API={API!} onSuccess={cargarTenants} />
                                 </div>
                             </div>
                         )}
