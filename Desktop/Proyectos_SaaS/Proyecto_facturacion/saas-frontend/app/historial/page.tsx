@@ -129,11 +129,11 @@ export default function HistorialPage() {
             <Navbar />
 
             <PageWrapper>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900">Historial de comprobantes</h1>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900">Historial de comprobantes</h1>
                         <p className="text-slate-500 text-sm mt-1">Bóveda de facturación electrónica.</p>
                     </div>
                     <div className="relative">
@@ -146,7 +146,7 @@ export default function HistorialPage() {
                             onChange={(e) => setBusqueda(e.target.value)}
                             className="pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm
                                 text-slate-700 bg-white focus:ring-2 focus:ring-blue-500
-                                focus:outline-none transition w-64"
+                                focus:outline-none transition w-full sm:w-64"
                             placeholder="Buscar cliente, RUC, comprobante..." />
                     </div>
                 </div>
@@ -158,18 +158,18 @@ export default function HistorialPage() {
                             Cargando bóveda...
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
                             <table className="w-full text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-200
                                         text-slate-500 text-xs uppercase tracking-wider">
-                                        <th className="px-5 py-3.5 text-left font-semibold">Comprobante</th>
-                                        <th className="px-5 py-3.5 text-left font-semibold">Fecha</th>
-                                        <th className="px-5 py-3.5 text-left font-semibold">Cliente</th>
-                                        <th className="px-5 py-3.5 text-right font-semibold">Total</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Pago</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Estado</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Acciones</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Comprobante</th>
+                                        <th className="hidden sm:table-cell px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Fecha</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Cliente</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-right font-semibold">Total</th>
+                                        <th className="hidden sm:table-cell px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Pago</th>
+                                        <th className="hidden sm:table-cell px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Estado</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -185,7 +185,7 @@ export default function HistorialPage() {
                                         <tr key={inv.id}
                                             className={`hover:bg-slate-50 transition-colors ${inv.cancelled ? 'opacity-50' : ''}`}>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4">
                                                 <div className="flex items-center gap-2">
                                                     <span className="inline-block bg-slate-100 border border-slate-200
                                                         text-slate-800 text-xs font-bold font-mono px-2 py-1 rounded-lg">
@@ -200,11 +200,11 @@ export default function HistorialPage() {
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4 text-slate-600 font-medium">
+                                            <td className="hidden sm:table-cell px-3 sm:px-5 py-3 sm:py-4 text-slate-600 font-medium">
                                                 {inv.fecha || '—'}
                                             </td>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4">
                                                 <div className="font-semibold text-slate-800 max-w-[160px] truncate">
                                                     {inv.full_name || 'Sin registrar'}
                                                 </div>
@@ -213,15 +213,15 @@ export default function HistorialPage() {
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4 text-right font-bold text-blue-600">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4 text-right font-bold text-blue-600">
                                                 S/ {Number(inv.total_amount).toFixed(2)}
                                             </td>
 
-                                            <td className="px-5 py-4 text-center">
+                                            <td className="hidden sm:table-cell px-3 sm:px-5 py-3 sm:py-4 text-center">
                                                 {metodoPill(inv.payment_method)}
                                             </td>
 
-                                            <td className="px-5 py-4 text-center">
+                                            <td className="hidden sm:table-cell px-3 sm:px-5 py-3 sm:py-4 text-center">
                                                 <span className={`inline-block px-2.5 py-1 rounded-full
                                                     text-xs font-semibold border ${
                                                     inv.cancelled
@@ -236,7 +236,7 @@ export default function HistorialPage() {
                                                 </span>
                                             </td>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4">
                                                 <div className="flex items-center justify-center gap-2">
                                                     {/* PDF */}
                                                     <button
@@ -295,7 +295,7 @@ export default function HistorialPage() {
             {/* ── MODAL DE ANULACIÓN ─────────────────────────────────────────── */}
             {modalAnular && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border-t-4 border-red-500">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto border-t-4 border-red-500">
                         <h2 className="text-lg font-black text-slate-800 mb-1">
                             Anular comprobante
                         </h2>

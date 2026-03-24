@@ -285,12 +285,12 @@ export default function ProductosPage() {
             <Navbar />
 
             <PageWrapper>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900">Catálogo e inventario</h1>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900">Catálogo e inventario</h1>
                         <p className="text-slate-500 text-sm mt-1">Control de existencias y precios.</p>
                     </div>
                     {esGerente && (
@@ -359,7 +359,7 @@ export default function ProductosPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     {/* Tabla */}
                     <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -369,15 +369,16 @@ export default function ProductosPage() {
                                 Cargando...
                             </div>
                         ) : (
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
+                            <table className="w-full text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-200
                                         text-slate-500 text-xs uppercase tracking-wider">
-                                        <th className="px-5 py-3.5 text-left font-semibold">Producto</th>
-                                        <th className="px-5 py-3.5 text-right font-semibold">Precio</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Stock</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Producto</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-right font-semibold">Precio</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Stock</th>
                                         {esGerente && (
-                                            <th className="px-5 py-3.5 text-center font-semibold">Acciones</th>
+                                            <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Acciones</th>
                                         )}
                                     </tr>
                                 </thead>
@@ -394,7 +395,7 @@ export default function ProductosPage() {
                                         const b = stockBadge(Number(prod.stock_quantity ?? 0));
                                         return (
                                             <tr key={prod.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-5 py-3.5">
+                                                <td className="px-3 sm:px-5 py-2.5 sm:py-3.5">
                                                     <div className="flex items-start gap-2">
                                                         {prod.category_color && (
                                                             <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
@@ -420,10 +421,10 @@ export default function ProductosPage() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-5 py-3.5 text-right font-bold text-blue-600">
+                                                <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-right font-bold text-blue-600">
                                                     S/ {Number(prod.unit_price).toFixed(2)}
                                                 </td>
-                                                <td className="px-5 py-3.5 text-center">
+                                                <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center">
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1
                                                         rounded-full text-xs font-semibold border ${b.cls}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${b.dot}`} />
@@ -431,7 +432,7 @@ export default function ProductosPage() {
                                                     </span>
                                                 </td>
                                                 {esGerente && (
-                                                    <td className="px-5 py-3.5">
+                                                    <td className="px-3 sm:px-5 py-2.5 sm:py-3.5">
                                                         <div className="flex items-center justify-center gap-1">
                                                             <button onClick={() => abrirEditar(prod)}
                                                                 className="px-2 py-1 rounded-lg bg-slate-50 text-slate-600
@@ -472,6 +473,7 @@ export default function ProductosPage() {
                                     })}
                                 </tbody>
                             </table>
+                            </div>
                         )}
                         {!cargando && (
                             <div className="px-5 py-3 border-t border-slate-100 flex gap-4 text-xs text-slate-400">
@@ -486,7 +488,7 @@ export default function ProductosPage() {
 
                     {/* Panel Kardex */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/50">
                             <h3 className="text-sm font-bold text-slate-700">
                                 {productoMovs ? `Kardex — ${productoMovs.name}` : 'Kardex de movimientos'}
                             </h3>
@@ -555,7 +557,7 @@ export default function ProductosPage() {
                                         text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                                     placeholder="Ej. Teclado mecánico Redragon" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Precio *</label>
                                     <div className="relative">
@@ -578,7 +580,7 @@ export default function ProductosPage() {
                                         placeholder="0" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Código de barras
@@ -646,7 +648,7 @@ export default function ProductosPage() {
                                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm
                                         text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Precio</label>
                                     <div className="relative">
@@ -668,7 +670,7 @@ export default function ProductosPage() {
                                         placeholder="5" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Código de barras</label>
                                     <input type="text" value={formEditar.barcode}
@@ -716,7 +718,7 @@ export default function ProductosPage() {
             {/* ── MODAL GESTIÓN DE CATEGORÍAS ──────────────────────────────── */}
             {modalCategoria && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto">
                         <div className="flex justify-between items-center mb-5">
                             <h2 className="text-lg font-black text-slate-800">Categorías</h2>
                             <button onClick={() => setModalCategoria(false)}
@@ -798,7 +800,7 @@ export default function ProductosPage() {
             {/* ── MODAL INGRESO DE MERCANCÍA ────────────────────────────────── */}
             {modalIngreso && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border-t-4 border-emerald-500">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto border-t-4 border-emerald-500">
                         <h2 className="text-lg font-black text-slate-800 mb-1">Ingresar mercancía</h2>
                         <p className="text-sm text-slate-500 mb-4">
                             <strong>{modalIngreso.name}</strong> · Stock actual: <strong>{modalIngreso.stock_quantity ?? 0}</strong>
@@ -867,7 +869,7 @@ export default function ProductosPage() {
             {/* ── MODAL AJUSTE ─────────────────────────────────────────────── */}
             {modalAjuste && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border-t-4 border-amber-500">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto border-t-4 border-amber-500">
                         <h2 className="text-lg font-black text-slate-800 mb-1">Ajuste de inventario</h2>
                         <p className="text-sm text-slate-500 mb-4">
                             <strong>{modalAjuste.name}</strong> · Stock actual: <strong>{modalAjuste.stock_quantity ?? 0}</strong>

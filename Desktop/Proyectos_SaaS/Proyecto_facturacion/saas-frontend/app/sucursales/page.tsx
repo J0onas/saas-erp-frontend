@@ -183,11 +183,11 @@ export default function SucursalesPage() {
         <div className="bg-slate-50">
             <Navbar />
             <PageWrapper>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                         <div>
-                            <h1 className="text-2xl font-black text-slate-900">Sucursales</h1>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-900">Sucursales</h1>
                             <p className="text-slate-500 text-sm mt-1">
                                 Gestiona tus puntos de venta, stock y rendimiento por ubicación.
                             </p>
@@ -211,7 +211,7 @@ export default function SucursalesPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                         {/* Lista de sucursales */}
                         <div className="lg:col-span-1 space-y-3">
@@ -248,7 +248,7 @@ export default function SucursalesPage() {
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 my-2">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-3 border-y border-slate-100 my-2">
                                             {[
                                                 { label: 'Usuarios', val: suc.total_users },
                                                 { label: 'Facturas', val: suc.total_invoices },
@@ -296,7 +296,7 @@ export default function SucursalesPage() {
                             ) : (
                                 <>
                                     {/* Header */}
-                                    <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
                                         <div>
                                             <h3 className="font-bold text-slate-800">{sucSeleccionada.name}</h3>
                                             <p className="text-xs text-slate-400 mt-0.5">{sucSeleccionada.address || 'Sin dirección registrada'}</p>
@@ -325,12 +325,13 @@ export default function SucursalesPage() {
                                             {/* STOCK */}
                                             {vista === 'stock' && (
                                                 <div className="overflow-auto max-h-[520px]">
-                                                    <table className="w-full text-sm">
+                                                    <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
+                                                    <table className="w-full text-sm whitespace-nowrap">
                                                         <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
                                                             <tr className="text-slate-500 text-xs uppercase tracking-wider">
-                                                                <th className="px-5 py-3 text-left font-semibold">Producto</th>
-                                                                <th className="px-5 py-3 text-center font-semibold">Stock sucursal</th>
-                                                                <th className="px-5 py-3 text-center font-semibold">Stock total</th>
+                                                                <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Producto</th>
+                                                                <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Stock sucursal</th>
+                                                                <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Stock total</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-50">
@@ -338,11 +339,11 @@ export default function SucursalesPage() {
                                                                 const qty = Number(item.branch_quantity);
                                                                 return (
                                                                     <tr key={item.id} className="hover:bg-slate-50">
-                                                                        <td className="px-5 py-3.5">
+                                                                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5">
                                                                             <div className="font-medium text-slate-800">{item.name}</div>
                                                                             {item.category_name && <div className="text-xs text-slate-400">{item.category_name}</div>}
                                                                         </td>
-                                                                        <td className="px-5 py-3.5 text-center">
+                                                                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center">
                                                                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
                                                                                 qty <= 0 ? 'bg-red-100 text-red-600' :
                                                                                 qty <= 5 ? 'bg-amber-100 text-amber-700' :
@@ -352,7 +353,7 @@ export default function SucursalesPage() {
                                                                                 {qty} un.
                                                                             </span>
                                                                         </td>
-                                                                        <td className="px-5 py-3.5 text-center text-slate-500 text-sm font-medium">
+                                                                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center text-slate-500 text-sm font-medium">
                                                                             {Number(item.total_quantity)} un.
                                                                         </td>
                                                                     </tr>
@@ -360,6 +361,7 @@ export default function SucursalesPage() {
                                                             })}
                                                         </tbody>
                                                     </table>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -457,7 +459,7 @@ export default function SucursalesPage() {
                                             {/* STATS */}
                                             {vista === 'stats' && statsData && (
                                                 <div className="p-6 space-y-6">
-                                                    <div className="grid grid-cols-3 gap-4">
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                                         {[
                                                             { label: 'Facturas totales', val: statsData.stats.total_invoices, color: 'text-blue-600' },
                                                             { label: 'Total facturado', val: `S/ ${Number(statsData.stats.total_revenue).toFixed(2)}`, color: 'text-emerald-600' },
@@ -531,7 +533,7 @@ export default function SucursalesPage() {
             {/* MODAL CREAR / EDITAR */}
             {modalForm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto">
                         <div className="flex justify-between items-center mb-5">
                             <h2 className="text-lg font-black text-slate-800">
                                 {modalForm === 'crear' ? 'Nueva sucursal' : `Editar — ${sucEditar?.name}`}

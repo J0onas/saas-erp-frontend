@@ -124,12 +124,12 @@ export default function UsuariosPage() {
       <Navbar />
 
       <PageWrapper>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-black text-slate-900">Gestión de usuarios</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900">Gestión de usuarios</h1>
             <p className="text-slate-500 text-sm mt-1">
               Administra el acceso de tu equipo al sistema.
             </p>
@@ -156,7 +156,7 @@ export default function UsuariosPage() {
         )}
 
         {/* Info de roles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
           {[
             { rol: 'GERENTE', desc: 'Acceso completo: POS, reportes, configuración, usuarios.', color: 'border-blue-200 bg-blue-50' },
             { rol: 'CAJERO',  desc: 'Solo POS, inventario e historial de comprobantes.', color: 'border-slate-200 bg-slate-50' },
@@ -178,15 +178,16 @@ export default function UsuariosPage() {
               Cargando usuarios...
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
+            <table className="w-full text-sm whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500
                   text-xs uppercase tracking-wider">
-                  <th className="px-5 py-3.5 text-left font-semibold">Usuario</th>
-                  <th className="px-5 py-3.5 text-center font-semibold">Rol actual</th>
-                  <th className="px-5 py-3.5 text-center font-semibold">Estado</th>
-                  <th className="px-5 py-3.5 text-center font-semibold">Cambiar rol</th>
-                  <th className="px-5 py-3.5 text-center font-semibold">Acciones</th>
+                  <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Usuario</th>
+                  <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Rol actual</th>
+                  <th className="hidden sm:table-cell px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Estado</th>
+                  <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Cambiar rol</th>
+                  <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -201,7 +202,7 @@ export default function UsuariosPage() {
                     u.active === false ? 'opacity-50' : ''
                   }`}>
                     {/* Usuario */}
-                    <td className="px-5 py-4">
+                    <td className="px-3 sm:px-5 py-3 sm:py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center
                           justify-center text-slate-600 font-bold text-xs flex-shrink-0">
@@ -217,7 +218,7 @@ export default function UsuariosPage() {
                     </td>
 
                     {/* Rol */}
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-3 sm:px-5 py-3 sm:py-4 text-center">
                       <span className={`inline-block text-xs font-bold px-2.5 py-1
                         rounded-full border ${ROLE_STYLES[u.role] || ROLE_STYLES.CAJERO}`}>
                         {u.role || 'CAJERO'}
@@ -225,7 +226,7 @@ export default function UsuariosPage() {
                     </td>
 
                     {/* Estado */}
-                    <td className="px-5 py-4 text-center">
+                    <td className="hidden sm:table-cell px-3 sm:px-5 py-3 sm:py-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-semibold
                         px-2.5 py-1 rounded-full ${
                           u.active === false
@@ -240,7 +241,7 @@ export default function UsuariosPage() {
                     </td>
 
                     {/* Cambiar rol */}
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-3 sm:px-5 py-3 sm:py-4 text-center">
                       {u.role !== 'SUPERADMIN' && (
                         <select
                           defaultValue={u.role || 'CAJERO'}
@@ -255,7 +256,7 @@ export default function UsuariosPage() {
                     </td>
 
                     {/* Activar / Desactivar */}
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-3 sm:px-5 py-3 sm:py-4 text-center">
                       {u.role !== 'SUPERADMIN' && (
                         <button
                           onClick={() => toggleActivo(u.id, u.active !== false)}
@@ -273,6 +274,7 @@ export default function UsuariosPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>
@@ -281,7 +283,7 @@ export default function UsuariosPage() {
       {/* Modal agregar usuario */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 sm:mx-auto">
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-lg font-black text-slate-800">Agregar usuario</h2>
               <button onClick={() => setMostrarModal(false)}
@@ -320,7 +322,7 @@ export default function UsuariosPage() {
                   placeholder="cajero@minegocio.com" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Rol</label>
                   <select value={form.role}

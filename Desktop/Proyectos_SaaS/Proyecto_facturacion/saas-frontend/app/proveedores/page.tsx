@@ -192,11 +192,11 @@ export default function ProveedoresPage() {
             <Navbar />
 
             <PageWrapper>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900">Proveedores</h1>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900">Proveedores</h1>
                         <p className="text-slate-500 text-sm mt-1">
                             Gestiona tus contactos de compras y abastecimiento.
                         </p>
@@ -224,7 +224,7 @@ export default function ProveedoresPage() {
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                     <input type="text" value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
-                        className="w-full sm:w-72 px-4 py-2.5 border border-slate-200 rounded-xl
+                        className="w-full sm:w-64 px-4 py-2.5 border border-slate-200 rounded-xl
                             text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500
                             focus:outline-none transition"
                         placeholder="🔍 Buscar por nombre, RUC o contacto..." />
@@ -236,7 +236,7 @@ export default function ProveedoresPage() {
                     </label>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     {/* Tabla */}
                     <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -246,14 +246,15 @@ export default function ProveedoresPage() {
                                 Cargando proveedores...
                             </div>
                         ) : (
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
+                            <table className="w-full text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-200
                                         text-slate-500 text-xs uppercase tracking-wider">
-                                        <th className="px-5 py-3.5 text-left font-semibold">Proveedor</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Compras</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Estado</th>
-                                        <th className="px-5 py-3.5 text-center font-semibold">Acciones</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Proveedor</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Compras</th>
+                                        <th className="hidden sm:table-cell px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Estado</th>
+                                        <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -266,7 +267,7 @@ export default function ProveedoresPage() {
                                     ) : filtrados.map((prov) => (
                                         <tr key={prov.id}
                                             className={`hover:bg-slate-50 transition-colors ${!prov.active ? 'opacity-50' : ''}`}>
-                                            <td className="px-5 py-4">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4">
                                                 <div className="font-semibold text-slate-800">{prov.name}</div>
                                                 <div className="flex flex-wrap gap-3 mt-0.5">
                                                     {prov.ruc && <span className="text-xs font-mono text-slate-400">RUC: {prov.ruc}</span>}
@@ -275,11 +276,11 @@ export default function ProveedoresPage() {
                                                     {prov.email && <span className="text-xs text-slate-400">✉️ {prov.email}</span>}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4 text-center">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4 text-center">
                                                 <span className="text-sm font-bold text-slate-700">{prov.total_orders}</span>
                                                 <span className="text-xs text-slate-400 ml-1">órdenes</span>
                                             </td>
-                                            <td className="px-5 py-4 text-center">
+                                            <td className="hidden sm:table-cell px-3 sm:px-5 py-3 sm:py-4 text-center">
                                                 <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
                                                     prov.active
                                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -289,7 +290,7 @@ export default function ProveedoresPage() {
                                                     {prov.active ? 'Activo' : 'Inactivo'}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-4">
+                                            <td className="px-3 sm:px-5 py-3 sm:py-4">
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <button onClick={() => abrirEditar(prov)}
                                                         className="px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition text-xs font-medium">
@@ -313,6 +314,7 @@ export default function ProveedoresPage() {
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         )}
                         {!cargando && (
                             <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
@@ -323,7 +325,7 @@ export default function ProveedoresPage() {
 
                     {/* Panel historial */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/50">
                             <h3 className="text-sm font-bold text-slate-700">
                                 {provHistorial ? `Historial — ${provHistorial.name}` : 'Historial de compras'}
                             </h3>
@@ -387,7 +389,7 @@ export default function ProveedoresPage() {
                                 placeholder="Ej. Distribuidora Lima SAC" required
                                 value={form.name} onChange={handleField} />
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <InputField label="RUC" name="ruc"
                                     placeholder="20123456789"
                                     value={form.ruc} onChange={handleField} />

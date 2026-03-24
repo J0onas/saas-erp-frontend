@@ -76,11 +76,11 @@ export default function ReportesPage() {
       <Navbar />
 
       <PageWrapper>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-6">
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-900">Centro de mando</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900">Centro de mando</h1>
             <p className="text-slate-500 text-sm mt-1">Análisis de rendimiento y salud financiera.</p>
           </div>
           <button onClick={descargarSIRE}
@@ -102,7 +102,7 @@ export default function ReportesPage() {
         ) : metrics ? (
           <>
             {/* KPIs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <KpiCard
                 label="Ingresos totales" icon="💰"
                 value={`S/ ${Number(metrics.kpis.total_revenue).toFixed(2)}`}
@@ -180,26 +180,27 @@ export default function ReportesPage() {
             {/* Top productos */}
             {metrics.topProducts && metrics.topProducts.length > 0 && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-slate-700">Top productos estrella</h3>
                     <p className="text-xs text-slate-400 mt-0.5">Los artículos que generan más valor al negocio</p>
                   </div>
                   <span className="text-xl">🏆</span>
                 </div>
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-2xl">
+                <table className="w-full text-sm whitespace-nowrap">
                   <thead>
                     <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
-                      <th className="px-5 py-3 text-left font-semibold w-10">#</th>
-                      <th className="px-5 py-3 text-left font-semibold">Producto</th>
-                      <th className="px-5 py-3 text-center font-semibold">Unidades</th>
-                      <th className="px-5 py-3 text-right font-semibold">Ingresos</th>
+                      <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold w-10">#</th>
+                      <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-left font-semibold">Producto</th>
+                      <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center font-semibold">Unidades</th>
+                      <th className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-right font-semibold">Ingresos</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {metrics.topProducts.map((p: any, i: number) => (
                       <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5">
                           <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                             i === 0 ? 'bg-amber-100 text-amber-700'
                             : i === 1 ? 'bg-slate-200 text-slate-600'
@@ -207,15 +208,16 @@ export default function ReportesPage() {
                             : 'bg-slate-100 text-slate-400'
                           }`}>{i + 1}</span>
                         </td>
-                        <td className="px-5 py-3.5 font-semibold text-slate-800">{p.name}</td>
-                        <td className="px-5 py-3.5 text-center text-slate-600">{p.sold} un.</td>
-                        <td className="px-5 py-3.5 text-right font-bold text-emerald-600">
+                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 font-semibold text-slate-800">{p.name}</td>
+                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-center text-slate-600">{p.sold} un.</td>
+                        <td className="px-3 sm:px-5 py-2.5 sm:py-3.5 text-right font-bold text-emerald-600">
                           S/ {p.revenue.toFixed(2)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </>
