@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import PageWrapper from '../components/PageWrapper';
 import BranchSelector from '../components/BranchSelector';
+import { useNotifications, NotificationToasts, NotificationPanel } from '../components/useNotifications';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { notifications, toasts, connected, unreadCount, markAllRead } = useNotifications();
 
   const [cajaVerificada, setCajaVerificada] = useState(false);
   const [cajaAbierta, setCajaAbierta]     = useState(false);
@@ -427,10 +429,19 @@ export default function DashboardPage() {
   // ── POS PRINCIPAL ─────────────────────────────────────────────────────────
   return (
     <div className="bg-slate-50">
+      <NotificationToasts toasts={toasts} />
       <Navbar
         cajaInfo={cajaAbierta ? (branchSeleccionada?.name || 'Caja abierta') : undefined}
         onCerrarTurno={() => setMostrarModalCierre(true)}
       />
+      <div className="hidden md:block fixed top-3 right-4 z-30">
+        <NotificationPanel
+          notifications={notifications}
+          unreadCount={unreadCount}
+          connected={connected}
+          onMarkAllRead={markAllRead}
+        />
+      </div>
       <PageWrapper>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
