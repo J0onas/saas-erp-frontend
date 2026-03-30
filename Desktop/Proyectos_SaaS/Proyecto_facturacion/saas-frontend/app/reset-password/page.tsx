@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -42,6 +42,21 @@ function validatePassword(password: string): PasswordValidation {
 
 function isPasswordStrong(validation: PasswordValidation): boolean {
   return Object.values(validation).every(Boolean);
+}
+
+// Loading fallback para Suspense
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="text-center space-y-4">
+        <div className="relative mx-auto w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-4 border-emerald-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+        </div>
+        <p className="text-slate-600 font-medium">Cargando...</p>
+      </div>
+    </div>
+  );
 }
 
 // Componente de indicador de fortaleza
@@ -106,6 +121,14 @@ function PasswordStrengthIndicator({ validation }: { validation: PasswordValidat
 }
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
