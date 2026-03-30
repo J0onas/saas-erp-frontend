@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { 
+  EnvelopeIcon, 
+  CheckCircleIcon,
+  ArrowLeftIcon,
+  SparklesIcon
+} from '@heroicons/react/24/outline';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [form, setForm] = useState({
     businessName: '',
     ruc: '',
@@ -21,6 +25,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1); // 1 = datos empresa, 2 = credenciales
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -87,9 +93,9 @@ export default function RegisterPage() {
         throw new Error(data.message || 'Error al crear la cuenta');
       }
 
-      localStorage.setItem('saas_token', data.access_token);
-      if (data.user) localStorage.setItem('user_data', JSON.stringify(data.user));
-      router.push('/dashboard');
+      // Mostrar pantalla de verificación pendiente
+      setRegisteredEmail(form.email);
+      setRegistrationComplete(true);
 
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -104,6 +110,80 @@ export default function RegisterPage() {
 
   const passwordsMatch = form.confirmPassword && form.password === form.confirmPassword;
   const passwordsDontMatch = form.confirmPassword && form.password !== form.confirmPassword;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PANTALLA DE VERIFICACIÓN PENDIENTE
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          {/* Icono animado */}
+          <div className="relative mx-auto w-24 h-24">
+            <div className="absolute inset-0 bg-indigo-100 rounded-full animate-pulse"></div>
+            <div className="relative w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <EnvelopeIcon className="w-12 h-12 text-white" />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-slate-800">
+              ¡Revisa tu correo!
+            </h1>
+            <p className="text-slate-500">
+              Te enviamos un enlace de verificación a:
+            </p>
+            <p className="text-lg font-semibold text-indigo-600">
+              {registeredEmail}
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left space-y-2">
+            <p className="text-amber-800 font-medium text-sm flex items-center gap-2">
+              <span className="text-lg">📧</span>
+              Pasos para activar tu cuenta:
+            </p>
+            <ol className="text-amber-700 text-sm space-y-1 list-decimal list-inside">
+              <li>Abre tu bandeja de entrada</li>
+              <li>Busca el correo de SaaS POS</li>
+              <li>Haz clic en "Verificar mi correo"</li>
+              <li>¡Listo! Ya puedes iniciar sesión</li>
+            </ol>
+          </div>
+
+          <div className="bg-slate-100 rounded-xl p-4">
+            <p className="text-slate-600 text-sm">
+              ¿No recibiste el correo? Revisa tu carpeta de spam o{' '}
+              <button 
+                onClick={() => {
+                  // Reenviar verificación
+                  fetch(`${apiUrl}/api/v1/auth/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: registeredEmail }),
+                  });
+                  alert('Correo reenviado. Revisa tu bandeja de entrada.');
+                }}
+                className="text-indigo-600 hover:text-indigo-700 font-medium underline"
+              >
+                solicita uno nuevo
+              </button>
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+              Ir a iniciar sesión
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">

@@ -12,11 +12,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerification(false);
     setLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/v1/auth/login`, {
@@ -26,7 +29,13 @@ export default function LoginPage() {
         credentials: 'include',
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Credenciales incorrectas');
+      if (!res.ok) {
+        // Detectar si es error de verificación
+        if (data.message?.includes('verifica tu correo')) {
+          setNeedsVerification(true);
+        }
+        throw new Error(data.message || 'Credenciales incorrectas');
+      }
       if (data.access_token) localStorage.setItem('saas_token', data.access_token);
       if (data.user) localStorage.setItem('user_data', JSON.stringify(data.user));
       router.push('/dashboard');
@@ -38,6 +47,28 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Ingresa tu correo para reenviar la verificación');
+      return;
+    }
+    setResendingEmail(true);
+    try {
+      await fetch(`${apiUrl}/api/v1/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setError('');
+      setNeedsVerification(false);
+      alert('Correo de verificación reenviado. Revisa tu bandeja de entrada.');
+    } catch {
+      setError('Error al reenviar el correo');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -72,12 +103,28 @@ export default function LoginPage() {
             <div 
               role="alert"
               aria-live="polite"
-              className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3.5 rounded-xl text-sm"
+              className={`mb-6 flex flex-col gap-3 px-4 py-3.5 rounded-xl text-sm ${
+                needsVerification 
+                  ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                  : 'bg-red-50 border border-red-200 text-red-700'
+              }`}
             >
-              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+              {needsVerification && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingEmail}
+                  className="self-start ml-8 text-amber-800 font-medium underline hover:text-amber-900 disabled:opacity-50"
+                >
+                  {resendingEmail ? 'Enviando...' : 'Reenviar correo de verificación'}
+                </button>
+              )}
             </div>
           )}
 
