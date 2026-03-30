@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SaaS POS — Facturación Electrónica Perú",
+  title: "POSmart — Facturación Electrónica Perú",
   description: "Sistema de punto de venta con facturación electrónica para el mercado peruano.",
   icons: { icon: "/favicon.ico" },
 };

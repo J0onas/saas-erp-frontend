@@ -105,7 +105,7 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <div className="w-4 h-4 text-white">{Icons.receipts}</div>
             </div>
-            {!collapsed && <span className="text-white font-bold text-sm tracking-wide whitespace-nowrap">SaaS POS</span>}
+            {!collapsed && <span className="text-white font-bold text-sm tracking-wide whitespace-nowrap">POSmart</span>}
           </div>
           <button onClick={toggleCollapsed}
             className="text-slate-500 hover:text-slate-300 p-1 rounded-lg hover:bg-white/5 transition flex-shrink-0">
@@ -184,7 +184,7 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
           <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
             <div className="w-4 h-4 text-white">{Icons.receipts}</div>
           </div>
-          <span className="text-white font-bold text-sm">SaaS POS</span>
+          <span className="text-white font-bold text-sm">POSmart</span>
           {cajaInfo && (
             <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -212,7 +212,7 @@ export default function Navbar({ cajaInfo, onCerrarTurno }: {
                 <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
                   <div className="w-4 h-4 text-white">{Icons.receipts}</div>
                 </div>
-                <span className="text-white font-bold text-sm">SaaS POS</span>
+                <span className="text-white font-bold text-sm">POSmart</span>
               </div>
               <button onClick={() => setMobileOpen(false)}
                 className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
